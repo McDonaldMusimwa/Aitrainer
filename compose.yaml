@@ -66,6 +66,7 @@ services:
     ports:
       - "8081:8081"
     environment:
+      BROWSER: none
       EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:-http://localhost:8000}
       REACT_NATIVE_PACKAGER_HOSTNAME: ${REACT_NATIVE_PACKAGER_HOSTNAME:-localhost}
     stdin_open: true

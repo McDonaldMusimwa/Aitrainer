@@ -59,6 +59,16 @@ docker compose --profile mobile up --build
 
 Open http://localhost:8081. For native devices, set `REACT_NATIVE_PACKAGER_HOSTNAME` to the computer's LAN IP and `EXPO_PUBLIC_API_URL` to its API URL in the root `.env`. Recreate the mobile container. Local Expo is usually easier for device development. Container source is copied at build time; rebuild after edits.
 
+## Account screen preview
+
+The app opens with the welcome screen. Create Account opens sign-up; Already Have an account opens login; Forgot your password opens password reset. These screens use React Navigation 7 and reusable React Native UI components styled to match the account wireframes. Forms validate locally, but authentication and email delivery are not implemented: submitting valid details shows a preview notice and does not create an account, sign in, or send email.
+
+Web routes are `/`, `/sign-up`, `/login`, and `/forgot-password`. The existing chat demo remains available at `/chat`. Reload Expo Go after rebuilding the mobile container to see changes.
+
+## App colors
+
+`apps/mobile/src/theme.ts` owns all component and navigation color tokens. The active `default` palette uses the attached reference's white, taupe, yellow, and black. `classic` preserves the earlier account palette as an optional second theme. Change `activeTheme` in that file and reload/rebuild to preview it; there is no user-facing theme switch yet. Both themes are light themes.
+
 ## Agent and AI
 
 Default `AGENT_PROVIDER=demo` returns an explicitly labeled placeholder, so the whole stack works without credentials. No actual model runs in demo mode.
