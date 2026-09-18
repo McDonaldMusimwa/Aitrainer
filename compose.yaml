@@ -1,0 +1,78 @@
+name: aitrainer
+services:
+  db:
+    image: postgres:17-alpine
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-aitrainer}
+      POSTGRES_USER: ${POSTGRES_USER:-aitrainer}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aitrainer_local}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  agent:
+    build: ./services/agent
+    environment:
+      AGENT_PROVIDER: ${AGENT_PROVIDER:-demo}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    build: ./services/backend
+    command: ["alembic", "upgrade", "head"]
+    environment: &backend-env
+      DB_HOST: db
+      DB_NAME: ${POSTGRES_DB:-aitrainer}
+      DB_USER: ${POSTGRES_USER:-aitrainer}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-aitrainer_local}
+      AGENT_URL: http://agent:8001
+      CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:8081","http://localhost:19006"]}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  backend:
+    build: ./services/backend
+    environment: *backend-env
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      agent:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mobile:
+    profiles: ["mobile"]
+    build: ./apps/mobile
+    ports:
+      - "8081:8081"
+    environment:
+      EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:-http://localhost:8000}
+      REACT_NATIVE_PACKAGER_HOSTNAME: ${REACT_NATIVE_PACKAGER_HOSTNAME:-localhost}
+    stdin_open: true
+    tty: true
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
