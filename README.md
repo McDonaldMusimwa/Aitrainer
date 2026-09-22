@@ -61,13 +61,13 @@ Open http://localhost:8081. For native devices, set `REACT_NATIVE_PACKAGER_HOSTN
 
 ## Account screen preview
 
-The app opens with the welcome screen. Create Account opens sign-up; Already Have an account opens login; Forgot your password opens password reset. These screens use React Navigation 7 and reusable React Native UI components styled to match the account wireframes. Forms validate locally, but authentication and email delivery are not implemented: submitting valid details shows a preview notice and does not create an account, sign in, or send email.
+The app opens with the welcome screen. Create Account opens sign-up; Already Have an account opens login; Forgot your password opens password reset. These screens use React Navigation 7 and reusable React Native UI components styled to match the account wireframes. Forms validate locally, but authentication is not implemented: valid sign-up details navigate into the onboarding assessment, and login accepts any email/password and navigates straight to the main app, but no account is actually created or credentials checked. Password reset still only shows a preview notice; no email is sent.
 
-Web routes are `/`, `/sign-up`, `/login`, and `/forgot-password`. The existing chat demo remains available at `/chat`. Reload Expo Go after rebuilding the mobile container to see changes.
+Web routes are `/`, `/sign-up`, `/login`, `/forgot-password`, and the full onboarding, plan, and workout flow under `/assessment/*`, `/plan/*`, and `/workout/*`. The chat demo is now the Coach tab of the main app, still reachable at `/chat`. Reload Expo Go after rebuilding the mobile container to see changes.
 
 ## App colors
 
-`apps/mobile/src/theme.ts` owns all component and navigation color tokens. The active `default` palette uses the attached reference's white, taupe, yellow, and black. `classic` preserves the earlier account palette as an optional second theme. Change `activeTheme` in that file and reload/rebuild to preview it; there is no user-facing theme switch yet. Both themes are light themes.
+`apps/mobile/src/theme.ts` owns all component and navigation color tokens. The active `mono` palette is a neutral grayscale (chosen after a design review for a more professional, serious feel) with a dark charcoal accent reserved for CTAs, the active tab, and key metrics. `default` (white/taupe/yellow/black) and `classic` (the earlier account palette) remain as alternatives. Change `activeTheme` in that file and reload/rebuild to preview one; there is no user-facing theme switch yet. All three themes are light themes.
 
 ## Agent and AI
 
@@ -82,6 +82,17 @@ OLLAMA_MODEL=llama3.2
 ```
 
 Ollama must listen on an interface reachable from Docker (configure `OLLAMA_HOST` if needed). Recreate the agent using `docker compose up -d --force-recreate agent`.
+
+For a hosted free-tier provider (works the same in dev and after deployment, unlike Ollama), get a free API key from [Google AI Studio](https://aistudio.google.com/apikey) and set:
+
+```dotenv
+AGENT_PROVIDER=gemini
+GEMINI_API_KEY=your-key-here
+GEMINI_MODEL=gemini-3.6-flash
+```
+
+Then recreate the agent: `docker compose up -d --force-recreate agent`.
+
 Provider errors are returned as API errors; the agent never silently substitutes demo output.
 Add other provider adapters inside `services/agent/app/`; keep provider secrets on the server.
 Agent requests are currently single-turn; saved exchanges are history, not model conversation memory.
