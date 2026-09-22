@@ -58,9 +58,26 @@ export const themes = {
     error: '#B42318',
     errorBackground: '#FCEBEA',
   },
+  // Neutral grayscale palette, chosen after a design review for a more professional, serious feel.
+  mono: {
+    background: '#F8F9FA',
+    surface: '#FFFFFF',
+    ink: '#212529',
+    muted: '#6C757D',
+    accent: '#343A40',
+    accentForeground: '#FFFFFF',
+    secondary: '#E9ECEF',
+    secondaryForeground: '#212529',
+    border: '#DEE2E6',
+    primary: '#212529',
+    primaryForeground: '#FFFFFF',
+    focus: '#E9ECEF',
+    error: '#B42318',
+    errorBackground: '#FCEBEA',
+  },
 } satisfies Record<string, AppColors>;
 
 export type ThemeName = keyof typeof themes;
-// Use one default app-wide for now. Change this to 'classic' to preview the other palette.
-export const activeTheme: ThemeName = 'default';
+// Use one default app-wide for now. Change this to 'classic' or 'default' to preview the other palettes.
+export const activeTheme: ThemeName = 'mono';
 export const colors: AppColors = themes[activeTheme];

@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
   list: { flex: 1 },
   loader: { flex: 1 },
   messages: { paddingBottom: 16, gap: 12 },
-  empty: { backgroundColor: colors.accent, padding: 24, borderRadius: 18, marginTop: 12 },
+  empty: { backgroundColor: colors.secondary, padding: 24, borderRadius: 18, marginTop: 12 },
   card: { backgroundColor: colors.surface, padding: 20, borderRadius: 16, gap: 12 },
   prompt: { fontWeight: '600', fontSize: 16, color: colors.ink },
   reply: { fontSize: 15, lineHeight: 23, color: colors.muted },
