@@ -51,6 +51,80 @@ export function Notice({ children }: PropsWithChildren) {
   return <View style={styles.notice}><Text accessibilityRole="alert" style={styles.noticeText}>{children}</Text></View>;
 }
 
+export function ProgressTrack({ step, total }: { step: number; total: number }) {
+  const pct = Math.max(0, Math.min(1, step / total));
+  return <View style={extra.track}><View style={[extra.trackFill, { width: `${pct * 100}%` }]} /></View>;
+}
+
+export function Card({ children, onPress }: PropsWithChildren<{ onPress?: () => void }>) {
+  const Wrapper = onPress ? Pressable : View;
+  return <Wrapper accessibilityRole={onPress ? 'button' : undefined} onPress={onPress} style={({ pressed }: any) => [extra.card, onPress && pressed && styles.pressed]}>
+    {children}
+  </Wrapper>;
+}
+
+export function OptionTile({ label, sublabel, selected, onPress }: { label: string; sublabel?: string; selected: boolean; onPress: () => void }) {
+  return <Pressable accessibilityRole="button" accessibilityState={{ selected }} onPress={onPress}
+    style={({ pressed }) => [extra.tile, selected && extra.tileSelected, pressed && styles.pressed]}>
+    <Text style={[extra.tileLabel, selected && extra.tileLabelSelected]}>{label}</Text>
+    {sublabel ? <Text style={extra.tileSublabel}>{sublabel}</Text> : null}
+  </Pressable>;
+}
+
+export function Pill({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+  return <Pressable accessibilityRole="button" accessibilityState={{ selected }} onPress={onPress}
+    style={({ pressed }) => [extra.pill, selected && extra.pillSelected, pressed && styles.pressed]}>
+    <Text style={[extra.pillLabel, selected && extra.pillLabelSelected]}>{label}</Text>
+  </Pressable>;
+}
+
+export function TextArea(props: TextInputProps & { error?: string }) {
+  return <Input {...props} multiline numberOfLines={5} textAlignVertical="top" style={[extra.textArea, props.style]} />;
+}
+
+export function SectionLabel({ children }: PropsWithChildren) {
+  return <Text style={extra.sectionLabel}>{children}</Text>;
+}
+
+export function Row({ label, value, onPress }: { label: string; value?: string; onPress?: () => void }) {
+  const Wrapper = onPress ? Pressable : View;
+  return <Wrapper accessibilityRole={onPress ? 'button' : undefined} onPress={onPress} style={({ pressed }: any) => [extra.row, onPress && pressed && styles.pressed]}>
+    <Text style={extra.rowLabel}>{label}</Text>
+    <View style={extra.rowRight}>
+      {value ? <Text style={extra.rowValue}>{value}</Text> : null}
+      {onPress ? <Text style={extra.rowChevron}>›</Text> : null}
+    </View>
+  </Wrapper>;
+}
+
+export function StatTile({ label, value }: { label: string; value: string }) {
+  return <View style={extra.stat}>
+    <Text style={extra.statValue}>{value}</Text>
+    <Text style={extra.statLabel}>{label}</Text>
+  </View>;
+}
+
+export function Bars({ data }: { data: { label: string; value: number }[] }) {
+  const max = Math.max(1, ...data.map(d => d.value));
+  return <View style={extra.bars}>
+    {data.map(d => <View key={d.label} style={extra.barColumn}>
+      <View style={extra.barTrack}><View style={[extra.barFill, { height: `${Math.max(6, (d.value / max) * 100)}%` }]} /></View>
+      <Text style={extra.barLabel}>{d.label}</Text>
+    </View>)}
+  </View>;
+}
+
+export function Checkline({ label, detail, checked, onPress }: { label: string; detail?: string; checked: boolean; onPress: () => void }) {
+  return <Pressable accessibilityRole="checkbox" accessibilityState={{ checked }} onPress={onPress}
+    style={({ pressed }) => [extra.checkline, checked && extra.checklineDone, pressed && styles.pressed]}>
+    <View style={[extra.checkbox, checked && extra.checkboxDone]}>{checked ? <Text style={extra.checkmark}>✓</Text> : null}</View>
+    <View style={extra.checklineText}>
+      <Text style={[extra.checklineLabel, checked && extra.checklineLabelDone]}>{label}</Text>
+      {detail ? <Text style={extra.checklineDetail}>{detail}</Text> : null}
+    </View>
+  </Pressable>;
+}
+
 const styles = StyleSheet.create({
   fill: { flex: 1 }, safe: { flex: 1, backgroundColor: colors.background },
   scroll: { flexGrow: 1 }, content: { flexGrow: 1, width: '100%', maxWidth: 430, alignSelf: 'center', paddingHorizontal: 24, paddingBottom: 32 },
@@ -70,4 +144,43 @@ const styles = StyleSheet.create({
   heroSubtitle: { fontSize: 14, fontWeight: '500', lineHeight: 20, color: colors.accentForeground, textAlign: 'center' },
   notice: { backgroundColor: colors.secondary, padding: 16, borderRadius: 12, marginTop: 20 },
   noticeText: { fontSize: 14, lineHeight: 21, color: colors.secondaryForeground },
+});
+
+const extra = StyleSheet.create({
+  track: { height: 4, borderRadius: 2, backgroundColor: colors.secondary, overflow: 'hidden', marginTop: -16, marginBottom: 28 },
+  trackFill: { height: 4, borderRadius: 2, backgroundColor: colors.accent },
+  card: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 18, gap: 6 },
+  tile: { borderWidth: 1, borderColor: colors.border, borderRadius: 14, paddingVertical: 16, paddingHorizontal: 16, gap: 4, backgroundColor: colors.surface },
+  tileSelected: { borderColor: colors.ink, borderWidth: 2, backgroundColor: colors.focus },
+  tileLabel: { fontSize: 15, fontWeight: '600', color: colors.ink },
+  tileLabelSelected: { color: colors.ink },
+  tileSublabel: { fontSize: 12, lineHeight: 17, color: colors.muted },
+  pill: { minHeight: 44, borderWidth: 1, borderColor: colors.border, borderRadius: 12, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14, paddingVertical: 10, backgroundColor: colors.surface },
+  pillSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  pillLabel: { fontSize: 13, fontWeight: '600', color: colors.ink },
+  pillLabelSelected: { color: colors.primaryForeground },
+  textArea: { minHeight: 140, paddingTop: 18 },
+  sectionLabel: { fontSize: 13, fontWeight: '700', letterSpacing: 0.3, color: colors.muted, textTransform: 'uppercase', marginBottom: 10 },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 52, borderBottomWidth: 1, borderBottomColor: colors.secondary },
+  rowLabel: { fontSize: 15, color: colors.ink, fontWeight: '500' },
+  rowRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  rowValue: { fontSize: 14, color: colors.muted },
+  rowChevron: { fontSize: 20, color: colors.muted, lineHeight: 20 },
+  stat: { flex: 1, alignItems: 'center', gap: 4, paddingVertical: 14 },
+  statValue: { fontSize: 20, fontWeight: '700', color: colors.ink },
+  statLabel: { fontSize: 12, color: colors.muted, textAlign: 'center' },
+  bars: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, height: 120, paddingTop: 8 },
+  barColumn: { flex: 1, alignItems: 'center', gap: 6, height: '100%', justifyContent: 'flex-end' },
+  barTrack: { width: '100%', flex: 1, justifyContent: 'flex-end' },
+  barFill: { width: '100%', borderRadius: 6, backgroundColor: colors.accent, minHeight: 6 },
+  barLabel: { fontSize: 10, color: colors.muted },
+  checkline: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.secondary },
+  checklineDone: { opacity: 0.55 },
+  checkbox: { width: 24, height: 24, borderRadius: 12, borderWidth: 1.5, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  checkboxDone: { backgroundColor: colors.ink, borderColor: colors.ink },
+  checkmark: { color: colors.background, fontSize: 13, fontWeight: '700' },
+  checklineText: { flex: 1, gap: 2 },
+  checklineLabel: { fontSize: 15, fontWeight: '600', color: colors.ink },
+  checklineLabelDone: { textDecorationLine: 'line-through' },
+  checklineDetail: { fontSize: 13, color: colors.muted },
 });

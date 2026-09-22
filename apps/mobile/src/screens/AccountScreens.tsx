@@ -25,46 +25,45 @@ export function SignUpScreen({ navigation }: Props<'SignUp'>) {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [submitted, setSubmitted] = useState(false);
-  const [notice, setNotice] = useState(false);
   function submit() {
     setSubmitted(true);
-    setNotice(!!name.trim() && validEmail(email) && password.length >= 8 && password === confirm);
+    const valid = !!name.trim() && validEmail(email) && password.length >= 8 && password === confirm;
+    if (valid) navigation.navigate('AssessmentWelcome');
   }
   return <Screen>
     <Header title="Create Account" onBack={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('EntryAccount')} />
     <View style={s.form}>
-      <Input placeholder="Full name" autoComplete="name" textContentType="name" value={name} onChangeText={v => { setName(v); setNotice(false); }} error={submitted && !name.trim() ? 'Enter your full name.' : undefined} returnKeyType="next" />
-      <Input placeholder="Email address" autoComplete="email" textContentType="emailAddress" keyboardType="email-address" autoCapitalize="none" autoCorrect={false} value={email} onChangeText={v => { setEmail(v); setNotice(false); }} error={submitted && !validEmail(email) ? 'Enter a valid email address.' : undefined} />
+      <Input placeholder="Full name" autoComplete="name" textContentType="name" value={name} onChangeText={setName} error={submitted && !name.trim() ? 'Enter your full name.' : undefined} returnKeyType="next" />
+      <Input placeholder="Email address" autoComplete="email" textContentType="emailAddress" keyboardType="email-address" autoCapitalize="none" autoCorrect={false} value={email} onChangeText={setEmail} error={submitted && !validEmail(email) ? 'Enter a valid email address.' : undefined} />
       <View style={s.passwordGap} />
-      <Input placeholder="Password" secureTextEntry autoCapitalize="none" autoComplete="new-password" textContentType="newPassword" value={password} onChangeText={v => { setPassword(v); setNotice(false); }} error={submitted && password.length < 8 ? 'Use at least 8 characters.' : undefined} />
-      <Input placeholder="Confirm Password" secureTextEntry autoCapitalize="none" textContentType="newPassword" value={confirm} onChangeText={v => { setConfirm(v); setNotice(false); }} onSubmitEditing={submit} returnKeyType="done" error={submitted && (!confirm || confirm !== password) ? 'Passwords must match.' : undefined} />
+      <Input placeholder="Password" secureTextEntry autoCapitalize="none" autoComplete="new-password" textContentType="newPassword" value={password} onChangeText={setPassword} error={submitted && password.length < 8 ? 'Use at least 8 characters.' : undefined} />
+      <Input placeholder="Confirm Password" secureTextEntry autoCapitalize="none" textContentType="newPassword" value={confirm} onChangeText={setConfirm} onSubmitEditing={submit} returnKeyType="done" error={submitted && (!confirm || confirm !== password) ? 'Passwords must match.' : undefined} />
     </View>
     <View style={s.signupActions}>
       <Button onPress={submit}>Continue</Button>
       <Text style={s.caption}>By continuing, you agree to the terms and privacy policy.</Text>
     </View>
-    {notice && <Notice>This is a preview of account setup. Account creation is not connected yet; your details have not been saved.</Notice>}
   </Screen>;
 }
 
 export function LoginScreen({ navigation }: Props<'Login'>) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-  const [notice, setNotice] = useState(false);
-  function submit() { setSubmitted(true); setNotice(validEmail(email) && !!password); }
+  function submit() {
+    // TODO: remove once login is hooked up to the backend; any input is accepted for now.
+    navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+  }
   return <Screen>
     <Header title="Welcome Back" onBack={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('EntryAccount')} />
     <View style={s.loginHero}><Hero title="Continue your plan" subtitle="Log in to see today's workout" /></View>
     <View style={s.form}>
-      <Input placeholder="Email address" keyboardType="email-address" autoCapitalize="none" autoCorrect={false} autoComplete="email" textContentType="emailAddress" value={email} onChangeText={v => { setEmail(v); setNotice(false); }} error={submitted && !validEmail(email) ? 'Enter a valid email address.' : undefined} />
-      <Input placeholder="Password" secureTextEntry autoCapitalize="none" autoComplete="current-password" textContentType="password" value={password} onChangeText={v => { setPassword(v); setNotice(false); }} returnKeyType="go" onSubmitEditing={submit} error={submitted && !password ? 'Enter your password.' : undefined} />
+      <Input placeholder="Email address" keyboardType="email-address" autoCapitalize="none" autoCorrect={false} autoComplete="email" textContentType="emailAddress" value={email} onChangeText={setEmail} />
+      <Input placeholder="Password" secureTextEntry autoCapitalize="none" autoComplete="current-password" textContentType="password" value={password} onChangeText={setPassword} returnKeyType="go" onSubmitEditing={submit} />
     </View>
     <View style={s.loginActions}>
       <Button onPress={submit}>Log in</Button>
       <Pressable accessibilityRole="button" onPress={() => navigation.navigate('ForgotPassword')} style={s.textButton}><Text style={s.caption}>Forgot your password</Text></Pressable>
     </View>
-    {notice && <Notice>Login is not connected yet. No credentials have been sent or saved.</Notice>}
   </Screen>;
 }
 
