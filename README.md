@@ -72,6 +72,17 @@ OLLAMA_MODEL=llama3.2
 ```
 
 Ollama must listen on an interface reachable from Docker (configure `OLLAMA_HOST` if needed). Recreate the agent using `docker compose up -d --force-recreate agent`.
+
+For a hosted free-tier provider (works the same in dev and after deployment, unlike Ollama), get a free API key from [Google AI Studio](https://aistudio.google.com/apikey) and set:
+
+```dotenv
+AGENT_PROVIDER=gemini
+GEMINI_API_KEY=your-key-here
+GEMINI_MODEL=gemini-3.6-flash
+```
+
+Then recreate the agent: `docker compose up -d --force-recreate agent`.
+
 Provider errors are returned as API errors; the agent never silently substitutes demo output.
 Add other provider adapters inside `services/agent/app/`; keep provider secrets on the server.
 Agent requests are currently single-turn; saved exchanges are history, not model conversation memory.

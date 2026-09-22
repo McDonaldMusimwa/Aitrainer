@@ -22,6 +22,8 @@ services:
       AGENT_PROVIDER: ${AGENT_PROVIDER:-demo}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.6-flash}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
@@ -66,6 +68,7 @@ services:
     ports:
       - "8081:8081"
     environment:
+      BROWSER: none
       EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:-http://localhost:8000}
       REACT_NATIVE_PACKAGER_HOSTNAME: ${REACT_NATIVE_PACKAGER_HOSTNAME:-localhost}
     stdin_open: true

@@ -6,9 +6,11 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    agent_provider: Literal["demo", "ollama"] = "demo"
+    agent_provider: Literal["demo", "ollama", "gemini"] = "demo"
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "llama3.2"
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-3.6-flash"
 
 
 class AgentRequest(BaseModel):
@@ -41,6 +43,27 @@ async def respond(payload: AgentRequest):
             ),
             provider="demo",
         )
+
+    if settings.agent_provider == "gemini":
+        if not settings.gemini_api_key:
+            raise HTTPException(500, "GEMINI_API_KEY is not configured")
+        try:
+            async with httpx.AsyncClient(timeout=80.0) as client:
+                response = await client.post(
+                    f"https://generativelanguage.googleapis.com/v1beta/models/{settings.gemini_model}:generateContent",
+                    params={"key": settings.gemini_api_key},
+                    json={
+                        "system_instruction": {"parts": [{"text": "You are Aitrainer, a helpful fitness and nutrition coaching assistant. Be clear and concise."}]},
+                        "contents": [{"role": "user", "parts": [{"text": payload.message}]}],
+                    },
+                )
+                response.raise_for_status()
+                text = response.json()["candidates"][0]["content"]["parts"][0]["text"]
+                return AgentResponse(reply=text, provider="gemini")
+        except httpx.TimeoutException as exc:
+            raise HTTPException(504, "AI provider timed out") from exc
+        except (httpx.HTTPError, ValueError, KeyError, TypeError, IndexError) as exc:
+            raise HTTPException(502, "AI provider returned an invalid response or is unavailable") from exc
 
     try:
         async with httpx.AsyncClient(timeout=80.0) as client:

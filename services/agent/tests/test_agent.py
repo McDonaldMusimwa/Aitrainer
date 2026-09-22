@@ -33,3 +33,35 @@ def test_provider_failure_never_falls_back_to_demo(monkeypatch):
     with TestClient(app) as client, patch("app.main.httpx.AsyncClient", return_value=upstream):
         result = client.post("/v1/respond", json={"message": "Hello"})
     assert result.status_code == 502
+
+
+def test_gemini_adapter(monkeypatch):
+    monkeypatch.setattr(settings, "agent_provider", "gemini")
+    monkeypatch.setattr(settings, "gemini_api_key", "test-key")
+    def handler(request):
+        assert request.url.path.endswith(":generateContent")
+        assert request.url.params["key"] == "test-key"
+        return httpx.Response(200, json={"candidates": [{"content": {"parts": [{"text": "Model reply"}]}}]})
+    upstream = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    with TestClient(app) as client, patch("app.main.httpx.AsyncClient", return_value=upstream):
+        result = client.post("/v1/respond", json={"message": "Hello"})
+    assert result.json() == {"reply": "Model reply", "provider": "gemini"}
+
+
+def test_gemini_requires_api_key(monkeypatch):
+    monkeypatch.setattr(settings, "agent_provider", "gemini")
+    monkeypatch.setattr(settings, "gemini_api_key", "")
+    with TestClient(app) as client:
+        result = client.post("/v1/respond", json={"message": "Hello"})
+    assert result.status_code == 500
+
+
+def test_gemini_failure_never_falls_back_to_demo(monkeypatch):
+    monkeypatch.setattr(settings, "agent_provider", "gemini")
+    monkeypatch.setattr(settings, "gemini_api_key", "test-key")
+    upstream = httpx.AsyncClient(transport=httpx.MockTransport(
+        lambda request: httpx.Response(500)
+    ))
+    with TestClient(app) as client, patch("app.main.httpx.AsyncClient", return_value=upstream):
+        result = client.post("/v1/respond", json={"message": "Hello"})
+    assert result.status_code == 502

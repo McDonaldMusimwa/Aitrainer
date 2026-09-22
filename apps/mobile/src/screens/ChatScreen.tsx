@@ -53,6 +53,7 @@ export default function ChatScreen() {
         {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
         {loading ? <ActivityIndicator style={styles.loader} color={colors.ink} /> :
           <FlatList
+            inverted
             style={styles.list}
             data={history}
             keyExtractor={item => item.id}
