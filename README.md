@@ -59,6 +59,16 @@ docker compose --profile mobile up --build
 
 Open http://localhost:8081. For native devices, set `REACT_NATIVE_PACKAGER_HOSTNAME` to the computer's LAN IP and `EXPO_PUBLIC_API_URL` to its API URL in the root `.env`. Recreate the mobile container. Local Expo is usually easier for device development. Container source is copied at build time; rebuild after edits.
 
+## Account screen preview
+
+The app opens with the welcome screen. Create Account opens sign-up; Already Have an account opens login; Forgot your password opens password reset. These screens use React Navigation 7 and reusable React Native UI components styled to match the account wireframes. Forms validate locally, but authentication is not implemented: valid sign-up details navigate into the onboarding assessment, and login accepts any email/password and navigates straight to the main app, but no account is actually created or credentials checked. Password reset still only shows a preview notice; no email is sent.
+
+Web routes are `/`, `/sign-up`, `/login`, `/forgot-password`, and the full onboarding, plan, and workout flow under `/assessment/*`, `/plan/*`, and `/workout/*`. The chat demo is now the Coach tab of the main app, still reachable at `/chat`. Reload Expo Go after rebuilding the mobile container to see changes.
+
+## App colors
+
+`apps/mobile/src/theme.ts` owns all component and navigation color tokens. The active `mono` palette is a neutral grayscale (chosen after a design review for a more professional, serious feel) with a dark charcoal accent reserved for CTAs, the active tab, and key metrics. `default` (white/taupe/yellow/black) and `classic` (the earlier account palette) remain as alternatives. Change `activeTheme` in that file and reload/rebuild to preview one; there is no user-facing theme switch yet. All three themes are light themes.
+
 ## Agent and AI
 
 Default `AGENT_PROVIDER=demo` returns an explicitly labeled placeholder, so the whole stack works without credentials. No actual model runs in demo mode.
