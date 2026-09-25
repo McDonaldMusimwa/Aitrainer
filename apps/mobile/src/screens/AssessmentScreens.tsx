@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation } from '@tanstack/react-query';
-import { Button, Header, Hero, Notice, OptionTile, Pill, ProgressTrack, Row, TextArea, Input, Screen, SectionLabel } from '../components/ui';
+import { Button, DateField, Header, Hero, Notice, OptionTile, Pill, ProgressTrack, Row, TextArea, Input, Screen, SectionLabel } from '../components/ui';
 import { colors } from '../theme';
 import { createAssessment, upsertProfile } from '../api';
 import { getCurrentUserId } from '../session';
@@ -50,7 +50,7 @@ export function AssessmentBasicsScreen({ navigation }: Props<'AssessmentBasics'>
   return <Screen>
     <WizardHeader title="About you" step={1} onBack={() => navigation.goBack()} />
     <View style={s.form}>
-      <Input placeholder="Date of birth" value={dob} onChangeText={setDob} keyboardType="numbers-and-punctuation" />
+      <DateField value={dob} onChange={setDob} />
       <View style={s.genderRow}>
         <Pill label="Female" selected={gender === 'female'} onPress={() => setGender('female')} />
         <Pill label="Male" selected={gender === 'male'} onPress={() => setGender('male')} />

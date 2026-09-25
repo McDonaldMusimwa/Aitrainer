@@ -1,6 +1,7 @@
-import { useState, type PropsWithChildren } from 'react';
+import { createElement, useState, type PropsWithChildren } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 import { colors } from '../theme';
 
@@ -38,6 +39,62 @@ export function Input({ error, ...props }: TextInputProps & { error?: string }) 
       onFocus={event => { setFocused(true); props.onFocus?.(event); }} onBlur={event => { setFocused(false); props.onBlur?.(event); }}
       style={[styles.input, focused && styles.focused, !!error && styles.invalid, props.style]} />
     {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
+  </View>;
+}
+
+const toIsoDate = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+// @react-native-community/datetimepicker ships no web implementation at all
+// (confirmed: no web source in the package) and silently renders nothing
+// there, so web gets a real <input type="date"> instead — the browser's
+// own calendar picker — styled to match Input.
+function WebDateField({ value, onChange, placeholder }: { value?: string; onChange: (isoDate: string) => void; placeholder: string }) {
+  return createElement('input', {
+    type: 'date',
+    value: value ?? '',
+    max: toIsoDate(new Date()),
+    'aria-label': placeholder,
+    onChange: (event: { target: { value: string } }) => onChange(event.target.value),
+    style: {
+      width: '100%', boxSizing: 'border-box', minHeight: 72, borderRadius: 16,
+      border: `1px solid ${colors.border}`, paddingLeft: 28, paddingRight: 28,
+      fontSize: 16, color: colors.ink, backgroundColor: colors.surface, fontFamily: 'inherit',
+    },
+  });
+}
+
+/** A tappable field that opens the native calendar picker (a real date input on web). */
+export function DateField({ value, onChange, placeholder = 'Date of birth' }: { value?: string; onChange: (isoDate: string) => void; placeholder?: string }) {
+  const [show, setShow] = useState(false);
+  const selected = value ? new Date(`${value}T00:00:00`) : new Date(2000, 0, 1);
+
+  if (Platform.OS === 'web') {
+    return <View style={styles.field}><WebDateField value={value} onChange={onChange} placeholder={placeholder} /></View>;
+  }
+
+  function handleChange(event: DateTimePickerEvent, date?: Date) {
+    if (Platform.OS === 'android') setShow(false);
+    if (event.type === 'dismissed' || !date) return;
+    onChange(toIsoDate(date));
+  }
+
+  const label = value ? selected.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : placeholder;
+
+  return <View style={styles.field}>
+    <Pressable accessibilityRole="button" accessibilityLabel={placeholder} onPress={() => setShow(true)} style={styles.input}>
+      <Text style={{ fontSize: 16, color: colors.ink }}>{label}</Text>
+    </Pressable>
+    {show && <DateTimePicker
+      value={selected} mode="date" maximumDate={new Date()}
+      display={Platform.OS === 'ios' ? 'inline' : 'default'}
+      onChange={handleChange}
+    />}
+    {Platform.OS === 'ios' && show && (
+      <Pressable accessibilityRole="button" onPress={() => setShow(false)} style={[styles.button, extra.doneButton]}>
+        <Text style={styles.buttonText}>Done</Text>
+      </Pressable>
+    )}
   </View>;
 }
 
@@ -148,6 +205,7 @@ const styles = StyleSheet.create({
 });
 
 const extra = StyleSheet.create({
+  doneButton: { marginTop: 12 },
   track: { height: 4, borderRadius: 2, backgroundColor: colors.secondary, overflow: 'hidden', marginTop: -16, marginBottom: 28 },
   trackFill: { height: 4, borderRadius: 2, backgroundColor: colors.accent },
   card: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 18, gap: 6 },
