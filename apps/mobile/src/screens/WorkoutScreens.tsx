@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Button, Card, Checkline, Header, Hero, Input, Pill, Screen, SectionLabel, TextArea } from '../components/ui';
+import { Button, Card, Checkline, Header, Hero, Input, NumberScroller, Pill, Screen, SectionLabel, TextArea } from '../components/ui';
 import { colors } from '../theme';
 import { findDay } from '../data/plan';
 import type { RootStackParamList } from '../navigation';
@@ -43,7 +43,7 @@ export function ExerciseDetailScreen({ navigation, route }: Props<'ExerciseDetai
   const day = findDay(route.params?.day);
   const exercise = day.exercises.find(e => e.name === route.params?.exercise) ?? day.exercises[0];
   const [setsDone, setSetsDone] = useState<boolean[]>(() => Array(exercise.sets).fill(false));
-  const [weight, setWeight] = useState(String(exercise.targetWeightKg));
+  const [weight, setWeight] = useState(exercise.targetWeightKg);
 
   function toggleSet(index: number) {
     setSetsDone(current => current.map((value, i) => i === index ? !value : value));
@@ -58,7 +58,7 @@ export function ExerciseDetailScreen({ navigation, route }: Props<'ExerciseDetai
     <Header title={exercise.name} onBack={() => navigation.goBack()} />
     <Text style={s.big}>{exercise.sets} x {exercise.reps}</Text>
     <Text style={s.detail}>Target {weight}kg · Rest {exercise.rest}</Text>
-    <View style={s.weightField}><Input placeholder="Weight (kg)" value={weight} onChangeText={setWeight} keyboardType="numeric" /></View>
+    <View style={s.weightField}><NumberScroller label="Weight" value={weight} onChange={setWeight} min={0} max={300} suffix="kg" /></View>
     <View style={s.setList}>
       {setsDone.map((checked, index) => <Checkline
         key={index}
