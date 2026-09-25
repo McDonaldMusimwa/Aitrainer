@@ -75,9 +75,26 @@ export const themes = {
     error: '#B42318',
     errorBackground: '#FCEBEA',
   },
+  // Warm ivory & antique gold, chosen from the design review's palette exploration.
+  keeper: {
+    background: '#F7F4EC',
+    surface: '#FFFFFF',
+    ink: '#1C1712',
+    muted: '#6B6152',
+    accent: '#B8892E',
+    accentForeground: '#1C1712',
+    secondary: '#F1ECDF',
+    secondaryForeground: '#1C1712',
+    border: '#E3DBC7',
+    primary: '#B8892E',
+    primaryForeground: '#1C1712',
+    focus: '#FBF3DC',
+    error: '#A63F2C',
+    errorBackground: '#FBEAE6',
+  },
 } satisfies Record<string, AppColors>;
 
 export type ThemeName = keyof typeof themes;
-// Use one default app-wide for now. Change this to 'classic' or 'default' to preview the other palettes.
-export const activeTheme: ThemeName = 'mono';
+// Use one default app-wide for now. Change this to 'classic', 'default', or 'mono' to preview the other palettes.
+export const activeTheme: ThemeName = 'keeper';
 export const colors: AppColors = themes[activeTheme];
