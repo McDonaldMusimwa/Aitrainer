@@ -1,4 +1,8 @@
 import { Platform } from 'react-native';
+import type {
+  Assessment, AssessmentCreateInput, AssessmentDetail,
+  ProgressPhoto, ProgressPhotoCreateInput, User, UserCreateInput, UserProfile, UserProfileUpsertInput,
+} from './types/domain';
 
 const baseUrl = (
   process.env.EXPO_PUBLIC_API_URL ||
@@ -39,3 +43,34 @@ export const sendMessage = (message: string) => request<Exchange>('/api/v1/chat'
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ message }),
 });
+
+const withJsonBody = (method: 'POST' | 'PUT', body: unknown): RequestInit => ({
+  method,
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(body),
+});
+
+export const registerUser = (input: UserCreateInput) =>
+  request<User>('/api/v1/users', withJsonBody('POST', input));
+
+export const getUser = (userId: string) => request<User>(`/api/v1/users/${userId}`);
+
+export const getProfile = (userId: string) => request<UserProfile>(`/api/v1/users/${userId}/profile`);
+
+export const upsertProfile = (userId: string, input: UserProfileUpsertInput) =>
+  request<UserProfile>(`/api/v1/users/${userId}/profile`, withJsonBody('PUT', input));
+
+export const createAssessment = (userId: string, input: AssessmentCreateInput) =>
+  request<AssessmentDetail>(`/api/v1/users/${userId}/assessments`, withJsonBody('POST', input));
+
+export const getLatestAssessment = (userId: string) =>
+  request<AssessmentDetail>(`/api/v1/users/${userId}/assessments/latest`);
+
+export const listAssessments = (userId: string) =>
+  request<Assessment[]>(`/api/v1/users/${userId}/assessments`);
+
+export const createProgressPhoto = (userId: string, input: ProgressPhotoCreateInput) =>
+  request<ProgressPhoto>(`/api/v1/users/${userId}/progress-photos`, withJsonBody('POST', input));
+
+export const listProgressPhotos = (userId: string) =>
+  request<ProgressPhoto[]>(`/api/v1/users/${userId}/progress-photos`);

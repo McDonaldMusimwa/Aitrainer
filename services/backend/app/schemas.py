@@ -1,6 +1,7 @@
 import uuid
 from datetime import date, datetime
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic.alias_generators import to_camel
 from .models import (
     ActivityLevel, AiAssessmentStatus, AssessmentStatus, BiologicalSex, BudgetLevel,
     DietaryPattern, DistanceUnit, EquipmentType, GoalPriority, GoalType,
@@ -9,18 +10,24 @@ from .models import (
 )
 
 
-class ChatRequest(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class CamelModel(BaseModel):
+    """Base for every schema exposed to the frontend: accepts and emits camelCase
+    over the wire (matching apps/mobile/src/types/domain.ts) while the Python side
+    stays snake_case. populate_by_name still accepts snake_case input too."""
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True, from_attributes=True)
+
+
+class ChatRequest(CamelModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True, str_strip_whitespace=True)
     message: str = Field(min_length=1, max_length=4000)
 
 
-class AgentReply(BaseModel):
+class AgentReply(CamelModel):
     reply: str = Field(min_length=1, max_length=32000)
     provider: str = Field(min_length=1, max_length=50)
 
 
-class ChatResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class ChatResponse(CamelModel):
     id: uuid.UUID
     prompt: str
     reply: str
@@ -30,14 +37,13 @@ class ChatResponse(BaseModel):
 
 # --- Account ---------------------------------------------------------------
 
-class UserCreate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class UserCreate(CamelModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True, str_strip_whitespace=True)
     email: EmailStr
     password: str = Field(min_length=8, max_length=200)
 
 
-class UserResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class UserResponse(CamelModel):
     id: uuid.UUID
     email: str
     email_verified: bool
@@ -46,8 +52,8 @@ class UserResponse(BaseModel):
     updated_at: datetime
 
 
-class UserProfileUpsert(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class UserProfileUpsert(CamelModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True, str_strip_whitespace=True)
     first_name: str = Field(min_length=1, max_length=100)
     last_name: str | None = Field(default=None, max_length=100)
     date_of_birth: date | None = None
@@ -60,8 +66,7 @@ class UserProfileUpsert(BaseModel):
     profile_image_url: str | None = None
 
 
-class UserProfileResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class UserProfileResponse(CamelModel):
     id: uuid.UUID
     user_id: uuid.UUID
     first_name: str
@@ -81,7 +86,7 @@ class UserProfileResponse(BaseModel):
 
 # --- Assessment and its children -------------------------------------------
 
-class UserGoalInput(BaseModel):
+class UserGoalInput(CamelModel):
     type: GoalType
     priority: GoalPriority
     target_value: float | None = None
@@ -89,13 +94,12 @@ class UserGoalInput(BaseModel):
 
 
 class UserGoalResponse(UserGoalInput):
-    model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID
     assessment_id: uuid.UUID
     created_at: datetime
 
 
-class TrainingPreferenceInput(BaseModel):
+class TrainingPreferenceInput(CamelModel):
     training_days_per_week: int = Field(ge=1, le=7)
     session_duration_minutes: int = Field(ge=10, le=240)
     preferred_days: list[str] | None = None
@@ -105,31 +109,28 @@ class TrainingPreferenceInput(BaseModel):
 
 
 class TrainingPreferenceResponse(TrainingPreferenceInput):
-    model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID
     assessment_id: uuid.UUID
 
 
-class AvailableEquipmentInput(BaseModel):
+class AvailableEquipmentInput(CamelModel):
     equipment_type: EquipmentType
     name: str | None = None
 
 
 class AvailableEquipmentResponse(AvailableEquipmentInput):
-    model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID
     assessment_id: uuid.UUID
 
 
-class HealthConstraintInput(BaseModel):
+class HealthConstraintInput(CamelModel):
     type: HealthConstraintType
     body_area: str | None = None
     description: str = Field(min_length=1)
     severity: Severity | None = None
 
 
-class HealthConstraintResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class HealthConstraintResponse(CamelModel):
     id: uuid.UUID
     assessment_id: uuid.UUID
     type: HealthConstraintType
@@ -142,7 +143,7 @@ class HealthConstraintResponse(BaseModel):
     updated_at: datetime
 
 
-class NutritionPreferenceInput(BaseModel):
+class NutritionPreferenceInput(CamelModel):
     dietary_pattern: DietaryPattern
     meals_per_day: int | None = Field(default=None, ge=1, le=10)
     allergies: list[str] | None = None
@@ -152,13 +153,11 @@ class NutritionPreferenceInput(BaseModel):
 
 
 class NutritionPreferenceResponse(NutritionPreferenceInput):
-    model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID
     assessment_id: uuid.UUID
 
 
-class AiAssessmentResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class AiAssessmentResponse(CamelModel):
     id: uuid.UUID
     assessment_id: uuid.UUID
     model_name: str
@@ -172,7 +171,7 @@ class AiAssessmentResponse(BaseModel):
     created_at: datetime
 
 
-class ProgressPhotoCreate(BaseModel):
+class ProgressPhotoCreate(CamelModel):
     assessment_id: uuid.UUID | None = None
     view: PhotoView
     storage_key: str = Field(min_length=1)
@@ -180,8 +179,7 @@ class ProgressPhotoCreate(BaseModel):
     ai_analysis_allowed: bool = False
 
 
-class ProgressPhotoResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class ProgressPhotoResponse(CamelModel):
     id: uuid.UUID
     user_id: uuid.UUID
     assessment_id: uuid.UUID | None
@@ -193,7 +191,7 @@ class ProgressPhotoResponse(BaseModel):
     deleted_at: datetime | None
 
 
-class AssessmentCreate(BaseModel):
+class AssessmentCreate(CamelModel):
     training_experience: TrainingExperience
     current_activity_level: ActivityLevel
     goals: list[UserGoalInput] = Field(min_length=1)
@@ -203,8 +201,7 @@ class AssessmentCreate(BaseModel):
     nutrition_preference: NutritionPreferenceInput | None = None
 
 
-class AssessmentResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class AssessmentResponse(CamelModel):
     id: uuid.UUID
     user_id: uuid.UUID
     version: int

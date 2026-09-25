@@ -1,8 +1,15 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Button, Header, Hero, OptionTile, Pill, ProgressTrack, Row, TextArea, Input, Screen, SectionLabel } from '../components/ui';
+import { useMutation } from '@tanstack/react-query';
+import { Button, DateField, Header, Hero, Notice, NumberScroller, OptionTile, Pill, ProgressTrack, Row, TextArea, Input, Screen, SectionLabel } from '../components/ui';
 import { colors } from '../theme';
+import { createAssessment, upsertProfile } from '../api';
+import { getCurrentUserId } from '../session';
+import {
+  DIET_OPTIONS, EQUIPMENT_OPTIONS, EXPERIENCE_OPTIONS, GOAL_OPTIONS,
+  activityLevelForExperience, getDraft, resetDraft, updateDraft,
+} from '../onboardingDraft';
 import type { RootStackParamList } from '../navigation';
 
 type Props<T extends keyof RootStackParamList> = NativeStackScreenProps<RootStackParamList, T>;
@@ -29,33 +36,46 @@ export function AssessmentWelcomeScreen({ navigation }: Props<'AssessmentWelcome
 export function AssessmentBasicsScreen({ navigation }: Props<'AssessmentBasics'>) {
   const [gender, setGender] = useState<'female' | 'male'>('female');
   const [dob, setDob] = useState('');
-  const [height, setHeight] = useState('');
-  const [weight, setWeight] = useState('');
+  const [height, setHeight] = useState(170);
+  const [weight, setWeight] = useState(70);
+  function submit() {
+    updateDraft({
+      biologicalSex: gender === 'female' ? 'FEMALE' : 'MALE',
+      dateOfBirth: dob.trim() || undefined,
+      heightCm: height,
+      currentWeightKg: weight,
+    });
+    navigation.navigate('AssessmentGoals');
+  }
   return <Screen>
     <WizardHeader title="About you" step={1} onBack={() => navigation.goBack()} />
     <View style={s.form}>
-      <Input placeholder="Date of birth" value={dob} onChangeText={setDob} keyboardType="numbers-and-punctuation" />
+      <DateField value={dob} onChange={setDob} />
       <View style={s.genderRow}>
         <Pill label="Female" selected={gender === 'female'} onPress={() => setGender('female')} />
         <Pill label="Male" selected={gender === 'male'} onPress={() => setGender('male')} />
       </View>
-      <Input placeholder="Height (cm)" value={height} onChangeText={setHeight} keyboardType="numeric" />
-      <Input placeholder="Current weight (kg)" value={weight} onChangeText={setWeight} keyboardType="numeric" />
+      <NumberScroller label="Height" value={height} onChange={setHeight} min={120} max={220} suffix="cm" />
+      <NumberScroller label="Current weight" value={weight} onChange={setWeight} min={30} max={200} suffix="kg" />
     </View>
-    <View style={s.continue}><Button onPress={() => navigation.navigate('AssessmentGoals')}>Continue</Button></View>
+    <View style={s.continue}><Button onPress={submit}>Continue</Button></View>
   </Screen>;
 }
 
 const GOALS = ['Lose body fat', 'Build muscle', 'Get stronger', 'Improve fitness'];
 export function AssessmentGoalsScreen({ navigation }: Props<'AssessmentGoals'>) {
   const [goal, setGoal] = useState(GOALS[1]);
+  function submit() {
+    updateDraft({ goalType: GOAL_OPTIONS[goal] });
+    navigation.navigate('AssessmentExperience');
+  }
   return <Screen>
     <WizardHeader title="Main goal" step={2} onBack={() => navigation.goBack()} />
     <Text style={s.subtitle}>Choose the outcome that matters most right now.</Text>
     <View style={s.grid}>
       {GOALS.map(g => <View key={g} style={s.gridItem}><OptionTile label={g} selected={goal === g} onPress={() => setGoal(g)} /></View>)}
     </View>
-    <View style={s.continue}><Button onPress={() => navigation.navigate('AssessmentExperience')}>Continue</Button></View>
+    <View style={s.continue}><Button onPress={submit}>Continue</Button></View>
   </Screen>;
 }
 
@@ -66,12 +86,17 @@ const EXPERIENCE = [
 ];
 export function AssessmentExperienceScreen({ navigation }: Props<'AssessmentExperience'>) {
   const [level, setLevel] = useState(EXPERIENCE[1].label);
+  function submit() {
+    const trainingExperience = EXPERIENCE_OPTIONS[level];
+    updateDraft({ trainingExperience });
+    navigation.navigate('AssessmentSchedule');
+  }
   return <Screen>
     <WizardHeader title="Training experience" step={3} onBack={() => navigation.goBack()} />
     <View style={s.list}>
       {EXPERIENCE.map(e => <OptionTile key={e.label} label={e.label} sublabel={e.sublabel} selected={level === e.label} onPress={() => setLevel(e.label)} />)}
     </View>
-    <View style={s.continue}><Button onPress={() => navigation.navigate('AssessmentSchedule')}>Continue</Button></View>
+    <View style={s.continue}><Button onPress={submit}>Continue</Button></View>
   </Screen>;
 }
 
@@ -80,6 +105,13 @@ const LENGTH_OPTIONS = ['30 min', '45 min', '60 min'];
 export function AssessmentScheduleScreen({ navigation }: Props<'AssessmentSchedule'>) {
   const [days, setDays] = useState(DAY_OPTIONS[1]);
   const [length, setLength] = useState(LENGTH_OPTIONS[1]);
+  function submit() {
+    updateDraft({
+      trainingDaysPerWeek: parseInt(days, 10),
+      sessionDurationMinutes: parseInt(length, 10),
+    });
+    navigation.navigate('AssessmentEquipment');
+  }
   return <Screen>
     <WizardHeader title="Your schedule" step={4} onBack={() => navigation.goBack()} />
     <SectionLabel>Training days</SectionLabel>
@@ -87,32 +119,40 @@ export function AssessmentScheduleScreen({ navigation }: Props<'AssessmentSchedu
     <View style={s.sectionGap} />
     <SectionLabel>Session length</SectionLabel>
     <View style={s.pillRow}>{LENGTH_OPTIONS.map(l => <Pill key={l} label={l} selected={length === l} onPress={() => setLength(l)} />)}</View>
-    <View style={s.continue}><Button onPress={() => navigation.navigate('AssessmentEquipment')}>Continue</Button></View>
+    <View style={s.continue}><Button onPress={submit}>Continue</Button></View>
   </Screen>;
 }
 
 const EQUIPMENT = ['Full gym', 'Home gym', 'Dumbbells only', 'Bodyweight only'];
 export function AssessmentEquipmentScreen({ navigation }: Props<'AssessmentEquipment'>) {
   const [equipment, setEquipment] = useState(EQUIPMENT[0]);
+  function submit() {
+    updateDraft(EQUIPMENT_OPTIONS[equipment]);
+    navigation.navigate('AssessmentHealth');
+  }
   return <Screen>
     <WizardHeader title="Available equipment" step={5} onBack={() => navigation.goBack()} />
     <View style={s.list}>
       {EQUIPMENT.map(e => <OptionTile key={e} label={e} selected={equipment === e} onPress={() => setEquipment(e)} />)}
     </View>
-    <View style={s.continue}><Button onPress={() => navigation.navigate('AssessmentHealth')}>Continue</Button></View>
+    <View style={s.continue}><Button onPress={submit}>Continue</Button></View>
   </Screen>;
 }
 
 export function AssessmentHealthScreen({ navigation }: Props<'AssessmentHealth'>) {
   const [notes, setNotes] = useState('');
   const [nothingToReport, setNothingToReport] = useState(false);
+  function submit() {
+    updateDraft({ healthDescription: nothingToReport ? '' : notes.trim() });
+    navigation.navigate('AssessmentNutrition');
+  }
   return <Screen>
     <WizardHeader title="Health and movement" step={6} onBack={() => navigation.goBack()} />
     <Text style={s.subtitle}>Tell us about any injuries, pain, or movement restrictions we should plan around.</Text>
     <TextArea placeholder="Describe..." value={notes} onChangeText={v => { setNotes(v); setNothingToReport(false); }} editable={!nothingToReport} />
     <View style={s.sectionGap} />
     <Button secondary onPress={() => { setNothingToReport(true); setNotes(''); }}>{nothingToReport ? 'Nothing to report ✓' : 'Nothing to report'}</Button>
-    <View style={s.continue}><Button onPress={() => navigation.navigate('AssessmentNutrition')}>Continue</Button></View>
+    <View style={s.continue}><Button onPress={submit}>Continue</Button></View>
   </Screen>;
 }
 
@@ -120,6 +160,13 @@ const DIETS = ['Performance', 'Vegetarian', 'Vegan', 'Low carb'];
 export function AssessmentNutritionScreen({ navigation }: Props<'AssessmentNutrition'>) {
   const [diet, setDiet] = useState(DIETS[0]);
   const [avoid, setAvoid] = useState('');
+  function submit() {
+    updateDraft({
+      dietaryPattern: DIET_OPTIONS[diet],
+      allergies: avoid.split(',').map(item => item.trim()).filter(Boolean),
+    });
+    navigation.navigate('AssessmentPhotos');
+  }
   return <Screen>
     <WizardHeader title="Nutrition preference" step={7} onBack={() => navigation.goBack()} />
     <View style={s.grid}>
@@ -127,7 +174,7 @@ export function AssessmentNutritionScreen({ navigation }: Props<'AssessmentNutri
     </View>
     <View style={s.sectionGap} />
     <Input placeholder="Allergies or foods to avoid" value={avoid} onChangeText={setAvoid} />
-    <View style={s.continue}><Button onPress={() => navigation.navigate('AssessmentPhotos')}>Continue</Button></View>
+    <View style={s.continue}><Button onPress={submit}>Continue</Button></View>
   </Screen>;
 }
 
@@ -148,16 +195,65 @@ export function AssessmentPhotosScreen({ navigation }: Props<'AssessmentPhotos'>
   </Screen>;
 }
 
+const GOAL_LABELS = Object.fromEntries(Object.entries(GOAL_OPTIONS).map(([label, value]) => [value, label]));
+const EXPERIENCE_LABELS = Object.fromEntries(Object.entries(EXPERIENCE_OPTIONS).map(([label, value]) => [value, label]));
+
 export function AssessmentReviewScreen({ navigation }: Props<'AssessmentReview'>) {
+  const draft = getDraft();
+
+  const submitAssessment = useMutation({
+    mutationFn: async () => {
+      const userId = getCurrentUserId();
+      if (!userId) throw new Error('Please create your account again before continuing.');
+
+      await upsertProfile(userId, {
+        firstName: draft.firstName,
+        lastName: draft.lastName,
+        dateOfBirth: draft.dateOfBirth,
+        biologicalSex: draft.biologicalSex,
+        heightCm: draft.heightCm,
+        currentWeightKg: draft.currentWeightKg,
+      });
+
+      return createAssessment(userId, {
+        trainingExperience: draft.trainingExperience,
+        currentActivityLevel: activityLevelForExperience(draft.trainingExperience),
+        goals: [{ type: draft.goalType, priority: 'PRIMARY' }],
+        trainingPreference: {
+          trainingDaysPerWeek: draft.trainingDaysPerWeek,
+          sessionDurationMinutes: draft.sessionDurationMinutes,
+          trainingLocation: draft.trainingLocation,
+        },
+        equipment: draft.equipment.map(equipmentType => ({ equipmentType })),
+        healthConstraints: draft.healthDescription
+          ? [{ type: 'EXERCISE_RESTRICTION', description: draft.healthDescription }]
+          : [],
+        nutritionPreference: {
+          dietaryPattern: draft.dietaryPattern,
+          allergies: draft.allergies.length ? draft.allergies : undefined,
+        },
+      });
+    },
+    onSuccess: () => {
+      resetDraft();
+      navigation.navigate('PlanReady');
+    },
+  });
+
   return <Screen>
     <WizardHeader title="Review assessment" step={9} onBack={() => navigation.goBack()} />
     <View style={s.reviewList}>
-      <Row label="Goal" value="Build muscle" />
-      <Row label="Schedule" value="3 x 45 min" />
-      <Row label="Equipment" value="Full gym" />
-      <Row label="Level" value="Intermediate" />
+      <Row label="Goal" value={GOAL_LABELS[draft.goalType]} />
+      <Row label="Schedule" value={`${draft.trainingDaysPerWeek}x · ${draft.sessionDurationMinutes} min`} />
+      <Row label="Equipment" value={`${draft.equipment.length} item${draft.equipment.length === 1 ? '' : 's'}`} />
+      <Row label="Level" value={EXPERIENCE_LABELS[draft.trainingExperience]} />
     </View>
-    <View style={s.continue}><Button onPress={() => navigation.navigate('PlanReady')}>Generate my plan</Button></View>
+    <View style={s.continue}>
+      <Button onPress={() => submitAssessment.mutate()} disabled={submitAssessment.isPending}>
+        {submitAssessment.isPending ? 'Generating…' : 'Generate my plan'}
+      </Button>
+    </View>
+    {submitAssessment.isError && <Notice>{submitAssessment.error instanceof Error ? submitAssessment.error.message : 'Could not save your assessment. Please try again.'}</Notice>}
   </Screen>;
 }
 
