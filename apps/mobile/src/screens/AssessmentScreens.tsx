@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation } from '@tanstack/react-query';
-import { Button, DateField, Header, Hero, Notice, OptionTile, Pill, ProgressTrack, Row, TextArea, Input, Screen, SectionLabel } from '../components/ui';
+import { Button, DateField, Header, Hero, Notice, NumberScroller, OptionTile, Pill, ProgressTrack, Row, TextArea, Input, Screen, SectionLabel } from '../components/ui';
 import { colors } from '../theme';
 import { createAssessment, upsertProfile } from '../api';
 import { getCurrentUserId } from '../session';
@@ -36,14 +36,14 @@ export function AssessmentWelcomeScreen({ navigation }: Props<'AssessmentWelcome
 export function AssessmentBasicsScreen({ navigation }: Props<'AssessmentBasics'>) {
   const [gender, setGender] = useState<'female' | 'male'>('female');
   const [dob, setDob] = useState('');
-  const [height, setHeight] = useState('');
-  const [weight, setWeight] = useState('');
+  const [height, setHeight] = useState(170);
+  const [weight, setWeight] = useState(70);
   function submit() {
     updateDraft({
       biologicalSex: gender === 'female' ? 'FEMALE' : 'MALE',
       dateOfBirth: dob.trim() || undefined,
-      heightCm: height.trim() ? Number(height) : undefined,
-      currentWeightKg: weight.trim() ? Number(weight) : undefined,
+      heightCm: height,
+      currentWeightKg: weight,
     });
     navigation.navigate('AssessmentGoals');
   }
@@ -55,8 +55,8 @@ export function AssessmentBasicsScreen({ navigation }: Props<'AssessmentBasics'>
         <Pill label="Female" selected={gender === 'female'} onPress={() => setGender('female')} />
         <Pill label="Male" selected={gender === 'male'} onPress={() => setGender('male')} />
       </View>
-      <Input placeholder="Height (cm)" value={height} onChangeText={setHeight} keyboardType="numeric" />
-      <Input placeholder="Current weight (kg)" value={weight} onChangeText={setWeight} keyboardType="numeric" />
+      <NumberScroller label="Height" value={height} onChange={setHeight} min={120} max={220} suffix="cm" />
+      <NumberScroller label="Current weight" value={weight} onChange={setWeight} min={30} max={200} suffix="kg" />
     </View>
     <View style={s.continue}><Button onPress={submit}>Continue</Button></View>
   </Screen>;
