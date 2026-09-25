@@ -24,8 +24,9 @@ export function Header({ title, onBack }: { title: string; onBack: () => void })
   </View>;
 }
 
-export function Button({ children, onPress, secondary = false }: PropsWithChildren<{ onPress: () => void; secondary?: boolean }>) {
-  return <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.button, secondary && styles.secondary, pressed && styles.pressed]}>
+export function Button({ children, onPress, secondary = false, disabled = false }: PropsWithChildren<{ onPress: () => void; secondary?: boolean; disabled?: boolean }>) {
+  return <Pressable accessibilityRole="button" accessibilityState={{ disabled }} onPress={onPress} disabled={disabled}
+    style={({ pressed }) => [styles.button, secondary && styles.secondary, (pressed || disabled) && styles.pressed]}>
     <Text style={[styles.buttonText, secondary && { color: colors.secondaryForeground }]}>{children}</Text>
   </Pressable>;
 }

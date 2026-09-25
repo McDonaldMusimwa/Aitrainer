@@ -1,5 +1,6 @@
 import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { EntryAccountScreen, SignUpScreen, LoginScreen, ForgotPasswordScreen } from './src/screens/AccountScreens';
@@ -17,9 +18,11 @@ import type { RootStackParamList } from './src/navigation';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const theme = { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: colors.background, card: colors.surface, text: colors.ink, border: colors.border, primary: colors.primary, notification: colors.accent } };
+const queryClient = new QueryClient();
 
 export default function App() {
-  return <SafeAreaProvider>
+  return <QueryClientProvider client={queryClient}>
+  <SafeAreaProvider>
     <StatusBar style="dark" />
     <NavigationContainer<RootStackParamList>
       theme={theme}
@@ -67,5 +70,6 @@ export default function App() {
         <Stack.Screen name="Profile" component={ProfileScreen} />
       </Stack.Navigator>
     </NavigationContainer>
-  </SafeAreaProvider>;
+  </SafeAreaProvider>
+  </QueryClientProvider>;
 }
