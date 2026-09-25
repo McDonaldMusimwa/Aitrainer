@@ -39,6 +39,10 @@ An iOS simulator requires macOS. The native app runs on your device or emulator;
 - Backend health: http://localhost:8000/health
 - Chat: `POST /api/v1/chat` with `{"message":"Hello"}`
 - Latest saved exchanges: `GET /api/v1/chat?limit=20`
+- Register: `POST /api/v1/users` with `{"email","password"}`; `GET /api/v1/users/{id}`
+- Profile: `GET`/`PUT /api/v1/users/{id}/profile` (PUT creates it on first call, updates after)
+- Assessment: `POST /api/v1/users/{id}/assessments` (goals, training preference, equipment, health constraints, and nutrition preference in one nested payload; each call adds a new version); `GET .../assessments/latest`; `GET .../assessments` for the full version history
+- Progress photos: `POST`/`GET /api/v1/users/{id}/progress-photos` (stores the object-storage key and metadata only, never the image itself — nothing here uploads a file yet)
 
 Docker Compose waits for PostgreSQL, runs migrations, and starts the backend after the agent is healthy. PostgreSQL data persists in a named volume. PostgreSQL is available on your computer at `127.0.0.1:5433`. Set `POSTGRES_PORT` in the root `.env` to choose another host port. Containers connect to PostgreSQL at `db:5432`; the agent port is internal to Compose. Apply port changes with `docker compose up -d db`.
 
