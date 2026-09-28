@@ -284,7 +284,10 @@ const extra = StyleSheet.create({
   scrollerValueSelected: { fontSize: 19, fontWeight: '700', color: colors.ink },
   track: { height: 4, borderRadius: 2, backgroundColor: colors.secondary, overflow: 'hidden', marginTop: -16, marginBottom: 28 },
   trackFill: { height: 4, borderRadius: 2, backgroundColor: colors.accent },
-  card: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 18, gap: 6 },
+  card: {
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 18, gap: 6,
+    shadowColor: colors.ink, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 1,
+  },
   tile: { borderWidth: 1, borderColor: colors.border, borderRadius: 14, paddingVertical: 16, paddingHorizontal: 16, gap: 4, backgroundColor: colors.surface },
   tileSelected: { borderColor: colors.ink, borderWidth: 2, backgroundColor: colors.focus },
   tileLabel: { fontSize: 15, fontWeight: '600', color: colors.ink },

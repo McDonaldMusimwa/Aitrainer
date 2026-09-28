@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button, Card, Checkline, Header, Hero, Input, NumberScroller, Pill, Screen, SectionLabel, TextArea } from '../components/ui';
 import { colors } from '../theme';
@@ -43,10 +43,15 @@ export function ExerciseDetailScreen({ navigation, route }: Props<'ExerciseDetai
   const day = findDay(route.params?.day);
   const exercise = day.exercises.find(e => e.name === route.params?.exercise) ?? day.exercises[0];
   const [setsDone, setSetsDone] = useState<boolean[]>(() => Array(exercise.sets).fill(false));
-  const [weight, setWeight] = useState(exercise.targetWeightKg);
+  const [setWeights, setSetWeights] = useState<number[]>(() => Array(exercise.sets).fill(exercise.targetWeightKg));
+  const [activeSet, setActiveSet] = useState(0);
 
   function toggleSet(index: number) {
     setSetsDone(current => current.map((value, i) => i === index ? !value : value));
+  }
+
+  function updateWeight(index: number, value: number) {
+    setSetWeights(current => current.map((current_, i) => i === index ? value : current_));
   }
 
   function save() {
@@ -57,16 +62,36 @@ export function ExerciseDetailScreen({ navigation, route }: Props<'ExerciseDetai
   return <Screen>
     <Header title={exercise.name} onBack={() => navigation.goBack()} />
     <Text style={s.big}>{exercise.sets} x {exercise.reps}</Text>
-    <Text style={s.detail}>Target {weight}kg · Rest {exercise.rest}</Text>
-    <View style={s.weightField}><NumberScroller label="Weight" value={weight} onChange={setWeight} min={0} max={300} suffix="kg" /></View>
+    <Text style={s.detail}>Target {exercise.targetWeightKg}kg · Rest {exercise.rest}</Text>
     <View style={s.setList}>
-      {setsDone.map((checked, index) => <Checkline
-        key={index}
-        label={`Set ${index + 1}`}
-        detail={`${weight}kg · ${exercise.reps} reps`}
-        checked={checked}
-        onPress={() => toggleSet(index)}
-      />)}
+      {setWeights.map((weight, index) => {
+        const expanded = activeSet === index;
+        return <View key={index} style={s.setBlock}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setActiveSet(current => current === index ? -1 : index)}
+            style={({ pressed }) => [s.setRow, pressed && s.pressed]}
+          >
+            <Pressable
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: setsDone[index] }}
+              hitSlop={8}
+              onPress={() => toggleSet(index)}
+              style={[s.checkbox, setsDone[index] && s.checkboxDone]}
+            >
+              {setsDone[index] ? <Text style={s.checkmark}>✓</Text> : null}
+            </Pressable>
+            <View style={s.setRowText}>
+              <Text style={[s.setLabel, setsDone[index] && s.setLabelDone]}>Set {index + 1}</Text>
+              <Text style={s.setDetail}>{weight}kg · {exercise.reps} reps</Text>
+            </View>
+            <Text style={s.setChevron}>{expanded ? '▲' : '▼'}</Text>
+          </Pressable>
+          {expanded && <View style={s.setScroller}>
+            <NumberScroller label={`Set ${index + 1} weight`} value={weight} onChange={value => updateWeight(index, value)} min={0} max={300} suffix="kg" />
+          </View>}
+        </View>;
+      })}
     </View>
     <View style={s.continue}><Button onPress={save}>Save exercise</Button></View>
   </Screen>;
@@ -129,7 +154,19 @@ const s = StyleSheet.create({
   list: { gap: 0 }, continue: { marginTop: 36 },
   big: { fontSize: 28, fontWeight: '700', color: colors.ink, marginTop: 8 },
   detail: { fontSize: 14, lineHeight: 21, color: colors.muted, marginTop: 6, marginBottom: 20 },
-  weightField: { marginBottom: 12 }, setList: { gap: 0 },
+  setList: { gap: 0 },
   section: { marginTop: 24 }, pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 4 },
   adjustCard: { marginTop: 20 },
+  setBlock: { borderBottomWidth: 1, borderBottomColor: colors.secondary },
+  setRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14 },
+  pressed: { opacity: 0.7 },
+  checkbox: { width: 24, height: 24, borderRadius: 12, borderWidth: 1.5, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  checkboxDone: { backgroundColor: colors.ink, borderColor: colors.ink },
+  checkmark: { color: colors.background, fontSize: 13, fontWeight: '700' },
+  setRowText: { flex: 1, gap: 2 },
+  setLabel: { fontSize: 15, fontWeight: '600', color: colors.ink },
+  setLabelDone: { textDecorationLine: 'line-through', opacity: 0.55 },
+  setDetail: { fontSize: 13, color: colors.muted },
+  setChevron: { fontSize: 11, color: colors.muted },
+  setScroller: { paddingBottom: 16 },
 });

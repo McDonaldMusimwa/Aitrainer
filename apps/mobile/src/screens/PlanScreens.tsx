@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Button, Card, Header, Hero, Pill, Screen, SectionLabel } from '../components/ui';
+import { Button, Card, Header, Hero, Pill, Screen, SectionLabel, StatTile } from '../components/ui';
 import { colors } from '../theme';
 import { planDays, findDay } from '../data/plan';
 import type { RootStackParamList } from '../navigation';
@@ -39,14 +39,34 @@ export function PlanFirstScreen({ navigation }: Props<'PlanFirst'>) {
 
 export function PlanWorkoutPreviewScreen({ navigation, route }: Props<'PlanWorkoutPreview'>) {
   const day = findDay(route.params?.day);
+  const totalSets = day.exercises.reduce((sum, exercise) => sum + exercise.sets, 0);
   return <Screen>
     <Header title={day.label} onBack={() => navigation.goBack()} />
-    <Text style={s.duration}>45 mins</Text>
-    <View style={s.exerciseList}>
-      {day.exercises.map(exercise => <Card key={exercise.name}>
-        <Text style={s.exerciseName}>{exercise.name}</Text>
-        <Text style={s.exerciseDetail}>{exercise.sets} x {exercise.reps} · {exercise.rest}</Text>
-      </Card>)}
+    <Card>
+      <View style={s.statsRow}>
+        <StatTile label="Duration" value="45 mins" />
+        <View style={s.statDivider} />
+        <StatTile label="Exercises" value={String(day.exercises.length)} />
+        <View style={s.statDivider} />
+        <StatTile label="Total sets" value={String(totalSets)} />
+      </View>
+    </Card>
+    <View style={s.section}>
+      <SectionLabel>Exercises</SectionLabel>
+      <View style={s.exerciseList}>
+        {day.exercises.map((exercise, index) => <Card key={exercise.name}>
+          <View style={s.exerciseRow}>
+            <View style={s.badge}><Text style={s.badgeText}>{index + 1}</Text></View>
+            <View style={s.exerciseInfo}>
+              <Text style={s.exerciseName}>{exercise.name}</Text>
+              <View style={s.exerciseMeta}>
+                <Text style={s.exerciseSets}>{exercise.sets} sets × {exercise.reps} reps</Text>
+                <Text style={s.exerciseRest}>Rest {exercise.rest}</Text>
+              </View>
+            </View>
+          </View>
+        </Card>)}
+      </View>
     </View>
     <View style={s.continue}><Button onPress={() => navigation.navigate('TodayWorkout', { day: day.id })}>Start workout</Button></View>
   </Screen>;
@@ -58,8 +78,16 @@ const s = StyleSheet.create({
   schedule: { fontSize: 13, color: colors.muted, marginTop: 12, marginBottom: 20 },
   dayList: { gap: 12 }, dayTitle: { fontSize: 15, fontWeight: '600', color: colors.ink },
   dayDetail: { fontSize: 13, color: colors.muted },
-  duration: { fontSize: 14, color: colors.muted, marginTop: 4, marginBottom: 20 },
-  exerciseList: { gap: 12 }, exerciseName: { fontSize: 15, fontWeight: '600', color: colors.ink },
-  exerciseDetail: { fontSize: 13, color: colors.muted },
+  statsRow: { flexDirection: 'row', alignItems: 'center' },
+  statDivider: { width: 1, alignSelf: 'stretch', backgroundColor: colors.border },
+  exerciseList: { gap: 12 },
+  exerciseRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  badge: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
+  badgeText: { fontSize: 14, fontWeight: '700', color: colors.accentForeground },
+  exerciseInfo: { flex: 1, gap: 4 },
+  exerciseName: { fontSize: 15, fontWeight: '600', color: colors.ink },
+  exerciseMeta: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  exerciseSets: { fontSize: 13, color: colors.muted },
+  exerciseRest: { fontSize: 13, color: colors.muted, opacity: 0.7 },
   continue: { marginTop: 36 },
 });
