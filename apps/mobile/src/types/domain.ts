@@ -207,3 +207,79 @@ export type UserAggregate = {
   profile?: UserProfile;
   latestAssessment?: AssessmentDetail;
 };
+
+// --- Request bodies -------------------------------------------------------
+// Mirrors the *Input schemas in services/backend/app/schemas.py.
+
+export type UserCreateInput = {
+  email: string;
+  password: string;
+};
+
+export type UserProfileUpsertInput = {
+  firstName: string;
+  lastName?: string;
+  dateOfBirth?: string;
+  biologicalSex?: BiologicalSex;
+  heightCm?: number;
+  currentWeightKg?: number;
+  preferredWeightUnit?: WeightUnit;
+  preferredDistanceUnit?: DistanceUnit;
+  timezone?: string;
+  profileImageUrl?: string;
+};
+
+export type UserGoalInput = {
+  type: GoalType;
+  priority: GoalPriority;
+  targetValue?: number;
+  targetDate?: string;
+};
+
+export type TrainingPreferenceInput = {
+  trainingDaysPerWeek: number;
+  sessionDurationMinutes: number;
+  preferredDays?: string[];
+  trainingLocation: TrainingLocation;
+  preferredTrainingStyle?: string;
+  exercisesToAvoid?: string[];
+};
+
+export type AvailableEquipmentInput = {
+  equipmentType: EquipmentType;
+  name?: string;
+};
+
+export type HealthConstraintInput = {
+  type: HealthConstraintType;
+  bodyArea?: string;
+  description: string;
+  severity?: Severity;
+};
+
+export type NutritionPreferenceInput = {
+  dietaryPattern: DietaryPattern;
+  mealsPerDay?: number;
+  allergies?: string[];
+  dislikedFoods?: string[];
+  preferredFoods?: string[];
+  budgetLevel?: BudgetLevel;
+};
+
+export type AssessmentCreateInput = {
+  trainingExperience: TrainingExperience;
+  currentActivityLevel: ActivityLevel;
+  goals: UserGoalInput[];
+  trainingPreference: TrainingPreferenceInput;
+  equipment?: AvailableEquipmentInput[];
+  healthConstraints?: HealthConstraintInput[];
+  nutritionPreference?: NutritionPreferenceInput;
+};
+
+export type ProgressPhotoCreateInput = {
+  assessmentId?: string;
+  view: PhotoView;
+  storageKey: string;
+  capturedAt?: string;
+  aiAnalysisAllowed?: boolean;
+};

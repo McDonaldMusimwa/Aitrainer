@@ -1,8 +1,12 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useMutation } from '@tanstack/react-query';
 import { Button, Header, Hero, Input, Notice, Screen } from '../components/ui';
 import { colors } from '../theme';
+import { registerUser } from '../api';
+import { setCurrentUserId } from '../session';
+import { updateDraft } from '../onboardingDraft';
 import type { RootStackParamList } from '../navigation';
 
 type Props<T extends keyof RootStackParamList> = NativeStackScreenProps<RootStackParamList, T>;
@@ -25,10 +29,21 @@ export function SignUpScreen({ navigation }: Props<'SignUp'>) {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [submitted, setSubmitted] = useState(false);
+
+  const registration = useMutation({
+    mutationFn: () => registerUser({ email: email.trim(), password }),
+    onSuccess: user => {
+      setCurrentUserId(user.id);
+      const [firstName, ...rest] = name.trim().split(/\s+/);
+      updateDraft({ firstName, lastName: rest.join(' ') || undefined });
+      navigation.navigate('AssessmentWelcome');
+    },
+  });
+
   function submit() {
     setSubmitted(true);
     const valid = !!name.trim() && validEmail(email) && password.length >= 8 && password === confirm;
-    if (valid) navigation.navigate('AssessmentWelcome');
+    if (valid) registration.mutate();
   }
   return <Screen>
     <Header title="Create Account" onBack={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('EntryAccount')} />
@@ -40,9 +55,10 @@ export function SignUpScreen({ navigation }: Props<'SignUp'>) {
       <Input placeholder="Confirm Password" secureTextEntry autoCapitalize="none" textContentType="newPassword" value={confirm} onChangeText={setConfirm} onSubmitEditing={submit} returnKeyType="done" error={submitted && (!confirm || confirm !== password) ? 'Passwords must match.' : undefined} />
     </View>
     <View style={s.signupActions}>
-      <Button onPress={submit}>Continue</Button>
+      <Button onPress={submit} disabled={registration.isPending}>{registration.isPending ? 'Creating account…' : 'Continue'}</Button>
       <Text style={s.caption}>By continuing, you agree to the terms and privacy policy.</Text>
     </View>
+    {registration.isError && <Notice>{registration.error instanceof Error ? registration.error.message : 'Could not create your account. Please try again.'}</Notice>}
   </Screen>;
 }
 

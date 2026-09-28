@@ -1,6 +1,10 @@
-import { useState, type PropsWithChildren } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
+import { createElement, useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react';
+import {
+  KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
+  type NativeScrollEvent, type NativeSyntheticEvent, type TextInputProps,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 import { colors } from '../theme';
 
@@ -24,8 +28,9 @@ export function Header({ title, onBack }: { title: string; onBack: () => void })
   </View>;
 }
 
-export function Button({ children, onPress, secondary = false }: PropsWithChildren<{ onPress: () => void; secondary?: boolean }>) {
-  return <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.button, secondary && styles.secondary, pressed && styles.pressed]}>
+export function Button({ children, onPress, secondary = false, disabled = false }: PropsWithChildren<{ onPress: () => void; secondary?: boolean; disabled?: boolean }>) {
+  return <Pressable accessibilityRole="button" accessibilityState={{ disabled }} onPress={onPress} disabled={disabled}
+    style={({ pressed }) => [styles.button, secondary && styles.secondary, (pressed || disabled) && styles.pressed]}>
     <Text style={[styles.buttonText, secondary && { color: colors.secondaryForeground }]}>{children}</Text>
   </Pressable>;
 }
@@ -37,6 +42,129 @@ export function Input({ error, ...props }: TextInputProps & { error?: string }) 
       onFocus={event => { setFocused(true); props.onFocus?.(event); }} onBlur={event => { setFocused(false); props.onBlur?.(event); }}
       style={[styles.input, focused && styles.focused, !!error && styles.invalid, props.style]} />
     {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
+  </View>;
+}
+
+const toIsoDate = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+// @react-native-community/datetimepicker ships no web implementation at all
+// (confirmed: no web source in the package) and silently renders nothing
+// there, so web gets a real <input type="date"> instead — the browser's
+// own calendar picker — styled to match Input.
+function WebDateField({ value, onChange, placeholder }: { value?: string; onChange: (isoDate: string) => void; placeholder: string }) {
+  return createElement('input', {
+    type: 'date',
+    value: value ?? '',
+    max: toIsoDate(new Date()),
+    'aria-label': placeholder,
+    onChange: (event: { target: { value: string } }) => onChange(event.target.value),
+    style: {
+      width: '100%', boxSizing: 'border-box', minHeight: 72, borderRadius: 16,
+      border: `1px solid ${colors.border}`, paddingLeft: 28, paddingRight: 28,
+      fontSize: 16, color: colors.ink, backgroundColor: colors.surface, fontFamily: 'inherit',
+    },
+  });
+}
+
+/** A tappable field that opens the native calendar picker (a real date input on web). */
+export function DateField({ value, onChange, placeholder = 'Date of birth' }: { value?: string; onChange: (isoDate: string) => void; placeholder?: string }) {
+  const [show, setShow] = useState(false);
+  const selected = value ? new Date(`${value}T00:00:00`) : new Date(2000, 0, 1);
+
+  if (Platform.OS === 'web') {
+    return <View style={styles.field}><WebDateField value={value} onChange={onChange} placeholder={placeholder} /></View>;
+  }
+
+  function handleChange(event: DateTimePickerEvent, date?: Date) {
+    if (Platform.OS === 'android') setShow(false);
+    if (event.type === 'dismissed' || !date) return;
+    onChange(toIsoDate(date));
+  }
+
+  const label = value ? selected.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : placeholder;
+
+  return <View style={styles.field}>
+    <Pressable accessibilityRole="button" accessibilityLabel={placeholder} onPress={() => setShow(true)} style={styles.input}>
+      <Text style={{ fontSize: 16, color: colors.ink }}>{label}</Text>
+    </Pressable>
+    {show && <DateTimePicker
+      value={selected} mode="date" maximumDate={new Date()}
+      display={Platform.OS === 'ios' ? 'inline' : 'default'}
+      onChange={handleChange}
+    />}
+    {Platform.OS === 'ios' && show && (
+      <Pressable accessibilityRole="button" onPress={() => setShow(false)} style={[styles.button, extra.doneButton]}>
+        <Text style={styles.buttonText}>Done</Text>
+      </Pressable>
+    )}
+  </View>;
+}
+
+const SCROLLER_ITEM_HEIGHT = 44;
+const SCROLLER_VISIBLE_ITEMS = 3;
+
+/** A scrollable, snap-to-value number picker — no typing, matches Input's width. */
+export function NumberScroller({ value, onChange, min, max, step = 1, suffix, label }: {
+  value: number; onChange: (value: number) => void; min: number; max: number; step?: number; suffix?: string; label: string;
+}) {
+  const listRef = useRef<ScrollView>(null);
+  const values = useMemo(() => {
+    const list: number[] = [];
+    for (let v = min; v <= max; v += step) list.push(Math.round(v * 100) / 100);
+    return list;
+  }, [min, max, step]);
+  const padding = SCROLLER_ITEM_HEIGHT * Math.floor(SCROLLER_VISIBLE_ITEMS / 2);
+
+  const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const index = values.indexOf(value);
+    if (index >= 0) listRef.current?.scrollTo({ y: index * SCROLLER_ITEM_HEIGHT, animated: false });
+    return () => { if (settleTimer.current) clearTimeout(settleTimer.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function commitFromOffset(y: number) {
+    const index = Math.max(0, Math.min(values.length - 1, Math.round(y / SCROLLER_ITEM_HEIGHT)));
+    if (values[index] !== value) onChange(values[index]);
+  }
+
+  // onMomentumScrollEnd/onScrollEndDrag only fire for touch/drag release, never
+  // for mouse-wheel or trackpad scrolling on web, so the value would silently
+  // never update from wheel input. A debounced onScroll catches every input
+  // method the same way: commit once scrolling has actually stopped.
+  function onScroll(event: NativeSyntheticEvent<NativeScrollEvent>) {
+    const y = event.nativeEvent.contentOffset.y;
+    if (settleTimer.current) clearTimeout(settleTimer.current);
+    settleTimer.current = setTimeout(() => commitFromOffset(y), 120);
+  }
+
+  function onScrollSettled(event: NativeSyntheticEvent<NativeScrollEvent>) {
+    if (settleTimer.current) clearTimeout(settleTimer.current);
+    commitFromOffset(event.nativeEvent.contentOffset.y);
+  }
+
+  return <View style={styles.field}>
+    <Text style={extra.scrollerLabel}>{label}</Text>
+    <View style={[extra.scrollerFrame, { height: SCROLLER_ITEM_HEIGHT * SCROLLER_VISIBLE_ITEMS }]}>
+      <View pointerEvents="none" style={[extra.scrollerHighlight, { top: padding, height: SCROLLER_ITEM_HEIGHT }]} />
+      <ScrollView
+        ref={listRef}
+        showsVerticalScrollIndicator={false}
+        snapToInterval={SCROLLER_ITEM_HEIGHT}
+        decelerationRate="fast"
+        scrollEventThrottle={16}
+        onScroll={onScroll}
+        onMomentumScrollEnd={onScrollSettled}
+        onScrollEndDrag={onScrollSettled}
+        contentContainerStyle={{ paddingVertical: padding }}
+      >
+        {values.map(v => <View key={v} style={extra.scrollerRow}>
+          <Text style={[extra.scrollerValue, v === value && extra.scrollerValueSelected]}>{v}{suffix ? ` ${suffix}` : ''}</Text>
+        </View>)}
+      </ScrollView>
+    </View>
   </View>;
 }
 
@@ -147,6 +275,13 @@ const styles = StyleSheet.create({
 });
 
 const extra = StyleSheet.create({
+  doneButton: { marginTop: 12 },
+  scrollerLabel: { fontSize: 13, fontWeight: '600', color: colors.muted, marginBottom: 4 },
+  scrollerFrame: { borderWidth: 1, borderColor: colors.border, borderRadius: 16, backgroundColor: colors.surface, overflow: 'hidden' },
+  scrollerHighlight: { position: 'absolute', left: 0, right: 0, backgroundColor: colors.focus, borderRadius: 10, marginHorizontal: 8 },
+  scrollerRow: { height: SCROLLER_ITEM_HEIGHT, alignItems: 'center', justifyContent: 'center' },
+  scrollerValue: { fontSize: 16, color: colors.muted },
+  scrollerValueSelected: { fontSize: 19, fontWeight: '700', color: colors.ink },
   track: { height: 4, borderRadius: 2, backgroundColor: colors.secondary, overflow: 'hidden', marginTop: -16, marginBottom: 28 },
   trackFill: { height: 4, borderRadius: 2, backgroundColor: colors.accent },
   card: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 18, gap: 6 },
