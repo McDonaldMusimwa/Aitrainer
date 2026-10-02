@@ -13,6 +13,9 @@ import { PlanReadyScreen, PlanFirstScreen, PlanWorkoutPreviewScreen } from './sr
 import { TodayWorkoutScreen, ExerciseDetailScreen, WorkoutCompleteScreen, WorkoutAdjustScreen } from './src/screens/WorkoutScreens';
 import MainTabs from './src/screens/MainTabs';
 import ProfileScreen from './src/screens/ProfileScreen';
+import {
+  ProfilePersonalDetailsScreen, ProfileUnitsScreen, ProfileAssessmentAnswersScreen, ProfilePrivacyPhotosScreen,
+} from './src/screens/ProfileDetailScreens';
 import { colors } from './src/theme';
 import type { RootStackParamList } from './src/navigation';
 
@@ -40,6 +43,8 @@ export default function App() {
             Main: { screens: { Home: 'home', Plan: 'plan', Coach: 'chat', Progress: 'progress' } },
             TodayWorkout: 'workout/today', ExerciseDetail: 'workout/exercise', WorkoutComplete: 'workout/complete',
             WorkoutAdjust: 'workout/adjust', Profile: 'profile',
+            ProfilePersonalDetails: 'profile/personal-details', ProfileUnits: 'profile/units',
+            ProfileAssessmentAnswers: 'profile/assessment-answers', ProfilePrivacyPhotos: 'profile/privacy-photos',
           },
         },
       }}
@@ -68,6 +73,10 @@ export default function App() {
         <Stack.Screen name="WorkoutComplete" component={WorkoutCompleteScreen} />
         <Stack.Screen name="WorkoutAdjust" component={WorkoutAdjustScreen} />
         <Stack.Screen name="Profile" component={ProfileScreen} />
+        <Stack.Screen name="ProfilePersonalDetails" component={ProfilePersonalDetailsScreen} />
+        <Stack.Screen name="ProfileUnits" component={ProfileUnitsScreen} />
+        <Stack.Screen name="ProfileAssessmentAnswers" component={ProfileAssessmentAnswersScreen} />
+        <Stack.Screen name="ProfilePrivacyPhotos" component={ProfilePrivacyPhotosScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   </SafeAreaProvider>

@@ -10,6 +10,7 @@ import {
   DIET_OPTIONS, EQUIPMENT_OPTIONS, EXPERIENCE_OPTIONS, GOAL_OPTIONS,
   activityLevelForExperience, getDraft, resetDraft, updateDraft,
 } from '../onboardingDraft';
+import { EXPERIENCE_LABELS, GOAL_LABELS } from '../labels';
 import type { RootStackParamList } from '../navigation';
 
 type Props<T extends keyof RootStackParamList> = NativeStackScreenProps<RootStackParamList, T>;
@@ -194,9 +195,6 @@ export function AssessmentPhotosScreen({ navigation }: Props<'AssessmentPhotos'>
     <View style={s.continue}><Button onPress={() => navigation.navigate('AssessmentReview')}>Continue</Button></View>
   </Screen>;
 }
-
-const GOAL_LABELS = Object.fromEntries(Object.entries(GOAL_OPTIONS).map(([label, value]) => [value, label]));
-const EXPERIENCE_LABELS = Object.fromEntries(Object.entries(EXPERIENCE_OPTIONS).map(([label, value]) => [value, label]));
 
 export function AssessmentReviewScreen({ navigation }: Props<'AssessmentReview'>) {
   const draft = getDraft();
