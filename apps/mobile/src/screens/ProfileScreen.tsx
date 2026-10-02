@@ -1,31 +1,53 @@
 import { StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useQuery } from '@tanstack/react-query';
 import { Button, Header, Row, Screen } from '../components/ui';
 import { colors } from '../theme';
+import { getLatestAssessment, getProfile, getUser } from '../api';
+import { getCurrentUserId } from '../session';
+import { EXPERIENCE_LABELS, GOAL_LABELS } from '../labels';
 import type { RootStackParamList } from '../navigation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Profile'>;
 
+function memberSince(createdAt?: string) {
+  if (!createdAt) return '—';
+  const weeks = Math.max(0, Math.floor((Date.now() - new Date(createdAt).getTime()) / (7 * 24 * 60 * 60 * 1000)));
+  return `${weeks}wk`;
+}
+
 export default function ProfileScreen({ navigation }: Props) {
+  const userId = getCurrentUserId();
+  const userQuery = useQuery({ queryKey: ['user', userId], queryFn: () => getUser(userId as string), enabled: !!userId, retry: false });
+  const profileQuery = useQuery({ queryKey: ['profile', userId], queryFn: () => getProfile(userId as string), enabled: !!userId, retry: false });
+  const assessmentQuery = useQuery({ queryKey: ['latestAssessment', userId], queryFn: () => getLatestAssessment(userId as string), enabled: !!userId, retry: false });
+
+  const firstName = profileQuery.data?.firstName ?? 'Member';
+  const initial = firstName.charAt(0).toUpperCase();
+  const primaryGoal = assessmentQuery.data?.goals.find(goal => goal.priority === 'PRIMARY') ?? assessmentQuery.data?.goals[0];
+  const subtitle = assessmentQuery.data
+    ? `${EXPERIENCE_LABELS[assessmentQuery.data.trainingExperience]}${primaryGoal ? ` · ${GOAL_LABELS[primaryGoal.type]}` : ''}`
+    : 'Complete your assessment';
+
   return <Screen>
     <Header title="Profile" onBack={() => navigation.goBack()} />
     <View style={s.card}>
-      <View style={s.avatar}><Text style={s.avatarText}>S</Text></View>
+      <View style={s.avatar}><Text style={s.avatarText}>{initial}</Text></View>
       <View>
-        <Text style={s.name}>Sam</Text>
-        <Text style={s.subtitle}>Intermediate · Build muscle</Text>
+        <Text style={s.name}>{firstName}</Text>
+        <Text style={s.subtitle}>{subtitle}</Text>
       </View>
     </View>
     <View style={s.statRow}>
-      <View style={s.stat}><Text style={s.statValue}>42</Text><Text style={s.statLabel}>Workouts</Text></View>
-      <View style={s.stat}><Text style={s.statValue}>6</Text><Text style={s.statLabel}>Day streak</Text></View>
-      <View style={s.stat}><Text style={s.statValue}>9wk</Text><Text style={s.statLabel}>Member</Text></View>
+      <View style={s.stat}><Text style={s.statValue}>—</Text><Text style={s.statLabel}>Workouts</Text></View>
+      <View style={s.stat}><Text style={s.statValue}>—</Text><Text style={s.statLabel}>Day streak</Text></View>
+      <View style={s.stat}><Text style={s.statValue}>{memberSince(userQuery.data?.createdAt)}</Text><Text style={s.statLabel}>Member</Text></View>
     </View>
     <View style={s.list}>
-      <Row label="Personal details" onPress={() => {}} />
-      <Row label="Assessment answers" onPress={() => {}} />
-      <Row label="Units and preferences" onPress={() => {}} />
-      <Row label="Privacy and photos" onPress={() => {}} />
+      <Row label="Personal details" onPress={() => navigation.navigate('ProfilePersonalDetails')} />
+      <Row label="Assessment answers" onPress={() => navigation.navigate('ProfileAssessmentAnswers')} />
+      <Row label="Units and preferences" onPress={() => navigation.navigate('ProfileUnits')} />
+      <Row label="Privacy and photos" onPress={() => navigation.navigate('ProfilePrivacyPhotos')} />
     </View>
     <View style={s.logout}>
       <Button secondary onPress={() => navigation.reset({ index: 0, routes: [{ name: 'EntryAccount' }] })}>Logout</Button>

@@ -31,4 +31,8 @@ export type RootStackParamList = {
   WorkoutComplete: { day: 'A' | 'B' };
   WorkoutAdjust: undefined;
   Profile: undefined;
+  ProfilePersonalDetails: undefined;
+  ProfileUnits: undefined;
+  ProfileAssessmentAnswers: undefined;
+  ProfilePrivacyPhotos: undefined;
 };
