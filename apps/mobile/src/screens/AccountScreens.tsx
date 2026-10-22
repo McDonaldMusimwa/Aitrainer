@@ -10,6 +10,7 @@ import { updateDraft } from '../onboardingDraft';
 import type { RootStackParamList } from '../navigation';
 
 type Props<T extends keyof RootStackParamList> = NativeStackScreenProps<RootStackParamList, T>;
+const introImage = require('../assets/imgs/intropic.png');
 const validEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
 export function EntryAccountScreen({ navigation }: Props<'EntryAccount'>) {
@@ -45,7 +46,7 @@ export function SignUpScreen({ navigation }: Props<'SignUp'>) {
     const valid = !!name.trim() && validEmail(email) && password.length >= 8 && password === confirm;
     if (valid) registration.mutate();
   }
-  return <Screen>
+  return <Screen background={introImage}>
     <Header title="Create Account" onBack={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('EntryAccount')} />
     <View style={s.form}>
       <Input placeholder="Full name" autoComplete="name" textContentType="name" value={name} onChangeText={setName} error={submitted && !name.trim() ? 'Enter your full name.' : undefined} returnKeyType="next" />
@@ -69,7 +70,7 @@ export function LoginScreen({ navigation }: Props<'Login'>) {
     // TODO: remove once login is hooked up to the backend; any input is accepted for now.
     navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
   }
-  return <Screen>
+  return <Screen background={introImage}>
     <Header title="Welcome Back" onBack={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('EntryAccount')} />
     <View style={s.loginHero}><Hero title="Continue your plan" subtitle="Log in to see today's workout" /></View>
     <View style={s.form}>

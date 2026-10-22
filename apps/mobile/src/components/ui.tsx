@@ -1,21 +1,26 @@
 import { createElement, useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react';
 import {
-  KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
-  type NativeScrollEvent, type NativeSyntheticEvent, type TextInputProps,
+  ImageBackground, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
+  type ImageSourcePropType, type NativeScrollEvent, type NativeSyntheticEvent, type TextInputProps,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 import { colors } from '../theme';
 
-export function Screen({ children }: PropsWithChildren) {
-  return <SafeAreaView style={styles.safe}>
+export function Screen({ children, background }: PropsWithChildren<{ background?: ImageSourcePropType }>) {
+  const body = <SafeAreaView style={[styles.safe, background != null && styles.transparent]}>
     <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
         <View style={styles.content}>{children}</View>
       </ScrollView>
     </KeyboardAvoidingView>
   </SafeAreaView>;
+  if (background == null) return body;
+  // The wash keeps dark text and controls readable over a busy photo.
+  return <ImageBackground source={background} resizeMode="cover" style={styles.fill}>
+    <View style={styles.backgroundWash}>{body}</View>
+  </ImageBackground>;
 }
 
 export function Header({ title, onBack }: { title: string; onBack: () => void }) {
@@ -254,7 +259,8 @@ export function Checkline({ label, detail, checked, onPress }: { label: string; 
 }
 
 const styles = StyleSheet.create({
-  fill: { flex: 1 }, safe: { flex: 1, backgroundColor: colors.background },
+  fill: { flex: 1 }, safe: { flex: 1, backgroundColor: colors.background }, transparent: { backgroundColor: 'transparent' },
+  backgroundWash: { flex: 1, backgroundColor: `${colors.background}A6` },
   scroll: { flexGrow: 1 }, content: { flexGrow: 1, width: '100%', maxWidth: 430, alignSelf: 'center', paddingHorizontal: 24, paddingBottom: 32 },
   header: { flexDirection: 'row', alignItems: 'center', marginTop: 24, marginBottom: 36, minHeight: 48 },
   heading: { flex: 1, textAlign: 'center', fontSize: 23, fontWeight: '600', color: colors.ink, letterSpacing: -0.7 },
