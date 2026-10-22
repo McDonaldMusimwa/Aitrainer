@@ -70,7 +70,9 @@ services:
 
   mobile:
     profiles: ["mobile"]
-    build: ./apps/mobile
+    build:
+      context: ./apps/mobile
+      secrets: [extra_ca]
     ports:
       - "8081:8081"
     environment:
