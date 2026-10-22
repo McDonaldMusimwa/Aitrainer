@@ -153,3 +153,13 @@ Backend unit tests use SQLite and mocked agent responses. The separate smoke tes
 - npm audit reported 10 moderate transitive tooling advisories through Expo / xcode / uuid. The suggested automatic fix downgraded Expo to SDK 46 and was not applied.
 
 This Windows environment required its trusted root certificates for npm to work behind its certificate-inspecting network. Dependencies are already installed. If future installs report `UNABLE_TO_VERIFY_LEAF_SIGNATURE`, configure `NODE_EXTRA_CA_CERTS` with your organization's approved PEM certificate bundle; keep TLS verification enabled.
+
+The same applies to Docker image builds, where `pip install` fails with `CERTIFICATE_VERIFY_FAILED`. Pass the PEM certificate's contents in `EXTRA_CA_CERT_PEM`; Compose hands it to the build as the optional `extra_ca` secret, which is used only while installing dependencies and is not stored in the images. Builds without the variable are unaffected.
+
+```bash
+EXTRA_CA_CERT_PEM="$(cat /path/to/root-ca.pem)" docker compose up -d --build
+```
+
+```powershell
+$env:EXTRA_CA_CERT_PEM = Get-Content -Raw C:\path\to\root-ca.pem; docker compose up -d --build
+```

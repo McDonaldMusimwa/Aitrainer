@@ -17,7 +17,9 @@ services:
       retries: 10
 
   agent:
-    build: ./services/agent
+    build:
+      context: ./services/agent
+      secrets: [extra_ca]
     environment:
       AGENT_PROVIDER: ${AGENT_PROVIDER:-demo}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
@@ -33,7 +35,9 @@ services:
       retries: 5
 
   migrate:
-    build: ./services/backend
+    build:
+      context: ./services/backend
+      secrets: [extra_ca]
     command: ["alembic", "upgrade", "head"]
     environment: &backend-env
       DB_HOST: db
@@ -47,7 +51,9 @@ services:
         condition: service_healthy
 
   backend:
-    build: ./services/backend
+    build:
+      context: ./services/backend
+      secrets: [extra_ca]
     environment: *backend-env
     ports:
       - "${API_PORT:-8000}:8000"
@@ -76,6 +82,11 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+
+secrets:
+  # Optional PEM root certificate trusted during image builds (see README).
+  extra_ca:
+    environment: EXTRA_CA_CERT_PEM
 
 volumes:
   postgres_data:
