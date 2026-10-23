@@ -55,7 +55,7 @@ export function Button({ children, onPress, secondary = false, disabled = false,
   const { colors } = useTheme();
   const styles = useStyles(makeStyles);
   const textColor = photo ? (secondary ? onPhoto.text : onPhoto.buttonText) : secondary ? colors.secondaryForeground : undefined;
-  return <Pressable accessibilityRole="button" accessibilityState={{ disabled }} onPress={onPress} disabled={disabled}
+  return <Pressable accessibilityRole="button" aria-disabled={disabled} onPress={onPress} disabled={disabled}
     style={({ pressed }) => [styles.button, secondary && styles.secondary, photo && (secondary ? styles.photoSecondary : styles.photoPrimary), (pressed || disabled) && styles.pressed]}>
     <Text style={[styles.buttonText, photo && styles.photoButtonText, textColor != null && { color: textColor }]}>{children}</Text>
   </Pressable>;
@@ -235,7 +235,7 @@ export function Card({ children, onPress }: PropsWithChildren<{ onPress?: () => 
 export function OptionTile({ label, sublabel, selected, onPress }: { label: string; sublabel?: string; selected: boolean; onPress: () => void }) {
   const styles = useStyles(makeStyles);
   const extra = useStyles(makeExtra);
-  return <Pressable accessibilityRole="button" accessibilityState={{ selected }} onPress={onPress}
+  return <Pressable accessibilityRole="button" aria-selected={selected} onPress={onPress}
     style={({ pressed }) => [extra.tile, selected && extra.tileSelected, pressed && styles.pressed]}>
     <Text style={[extra.tileLabel, selected && extra.tileLabelSelected]}>{label}</Text>
     {sublabel ? <Text style={extra.tileSublabel}>{sublabel}</Text> : null}
@@ -245,7 +245,7 @@ export function OptionTile({ label, sublabel, selected, onPress }: { label: stri
 export function Pill({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
   const styles = useStyles(makeStyles);
   const extra = useStyles(makeExtra);
-  return <Pressable accessibilityRole="button" accessibilityState={{ selected }} onPress={onPress}
+  return <Pressable accessibilityRole="button" aria-selected={selected} onPress={onPress}
     style={({ pressed }) => [extra.pill, selected && extra.pillSelected, pressed && styles.pressed]}>
     <Text style={[extra.pillLabel, selected && extra.pillLabelSelected]}>{label}</Text>
   </Pressable>;
@@ -296,7 +296,7 @@ export function Bars({ data }: { data: { label: string; value: number }[] }) {
 export function Checkline({ label, detail, checked, onPress }: { label: string; detail?: string; checked: boolean; onPress: () => void }) {
   const styles = useStyles(makeStyles);
   const extra = useStyles(makeExtra);
-  return <Pressable accessibilityRole="checkbox" accessibilityState={{ checked }} onPress={onPress}
+  return <Pressable accessibilityRole="checkbox" aria-checked={checked} onPress={onPress}
     style={({ pressed }) => [extra.checkline, checked && extra.checklineDone, pressed && styles.pressed]}>
     <View style={[extra.checkbox, checked && extra.checkboxDone]}>{checked ? <Text style={extra.checkmark}>✓</Text> : null}</View>
     <View style={extra.checklineText}>

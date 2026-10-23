@@ -62,7 +62,7 @@ function StepTitle({ eyebrow, title, subtitle, photo = false }: { eyebrow: strin
 function ChoiceCard({ icon, label, description, selected, onPress }: { icon: IconName; label: string; description?: string; selected: boolean; onPress: () => void }) {
   const s = useStyles(makeStyles);
   const { colors } = useTheme();
-  return <Pressable accessibilityRole="radio" accessibilityState={{ selected }} onPress={onPress}
+  return <Pressable accessibilityRole="radio" aria-checked={selected} onPress={onPress}
     style={({ pressed }) => [s.choiceCard, selected && s.choiceCardSelected, pressed && s.pressed]}>
     <View style={[s.iconWrap, selected && s.iconWrapSelected]}><Icon name={icon} color={selected ? colors.primaryForeground : colors.accent} /></View>
     <Text style={[s.choiceLabel, selected && s.onPrimary]}>{label}</Text>
@@ -169,7 +169,7 @@ export function AssessmentExperienceScreen({ navigation }: Props<'AssessmentExpe
     <View style={s.list}>
       {EXPERIENCE.map(e => {
         const selected = level === e.label;
-        return <Pressable key={e.label} accessibilityRole="radio" accessibilityState={{ selected }} onPress={() => setLevel(e.label)}
+        return <Pressable key={e.label} accessibilityRole="radio" aria-checked={selected} onPress={() => setLevel(e.label)}
           style={({ pressed }) => [s.levelCard, selected && s.levelCardSelected, pressed && s.pressed]}>
           <LevelBars level={e.level} />
           <View style={s.flex}>
@@ -218,7 +218,7 @@ export function AssessmentScheduleScreen({ navigation }: Props<'AssessmentSchedu
     <View style={s.segmented} accessibilityRole="radiogroup">
       {LENGTHS.map(minutes => {
         const selected = length === minutes;
-        return <Pressable key={minutes} accessibilityRole="radio" accessibilityState={{ selected }} onPress={() => setLength(minutes)}
+        return <Pressable key={minutes} accessibilityRole="radio" aria-checked={selected} onPress={() => setLength(minutes)}
           style={[s.segmentOption, selected && s.segmentOptionSelected]}>
           <Text style={[s.segmentText, selected && s.onPrimary]}>{minutes} min</Text>
         </Pressable>;
