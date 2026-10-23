@@ -4,11 +4,15 @@ import {
   type ImageSourcePropType, type NativeScrollEvent, type NativeSyntheticEvent, type TextInputProps,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useIsFocused } from '@react-navigation/native';
+import { StatusBar } from 'expo-status-bar';
+import { LinearGradient } from 'expo-linear-gradient';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
-import { colors } from '../theme';
+import { colors, onPhoto } from '../theme';
 
 export function Screen({ children, background }: PropsWithChildren<{ background?: ImageSourcePropType }>) {
+  const focused = useIsFocused();
   const body = <SafeAreaView style={[styles.safe, background != null && styles.transparent]}>
     <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
@@ -17,36 +21,42 @@ export function Screen({ children, background }: PropsWithChildren<{ background?
     </KeyboardAvoidingView>
   </SafeAreaView>;
   if (background == null) return body;
-  // The wash keeps dark text and controls readable over a busy photo.
-  return <ImageBackground source={background} resizeMode="cover" style={styles.fill}>
-    <View style={styles.backgroundWash}>{body}</View>
+  // The gradient darkens the top (status bar, back button) and most of the bottom half,
+  // where the white text and controls sit; use the onPhoto variants of the controls on it.
+  return <ImageBackground source={background} resizeMode="cover" style={styles.fill} imageStyle={styles.cover}>
+    {focused && <StatusBar style="light" />}
+    <LinearGradient colors={onPhoto.gradient} locations={onPhoto.gradientStops} style={StyleSheet.absoluteFill} />
+    {body}
   </ImageBackground>;
 }
 
-export function Header({ title, onBack }: { title: string; onBack: () => void }) {
+export function Header({ title, onBack, onPhoto: photo = false }: { title: string; onBack: () => void; onPhoto?: boolean }) {
   return <View style={styles.header}>
     <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={onBack} hitSlop={8} style={styles.backTarget}>
-      <View style={styles.backCircle}><Text style={styles.arrow}>←</Text></View>
+      <View style={[styles.backCircle, photo && { borderColor: onPhoto.text }]}><Text style={[styles.arrow, photo && { color: onPhoto.text }]}>←</Text></View>
     </Pressable>
-    <Text accessibilityRole="header" style={styles.heading}>{title}</Text>
+    <Text accessibilityRole="header" style={[styles.heading, photo && { color: onPhoto.text }]}>{title}</Text>
     <View style={styles.backTarget} />
   </View>;
 }
 
-export function Button({ children, onPress, secondary = false, disabled = false }: PropsWithChildren<{ onPress: () => void; secondary?: boolean; disabled?: boolean }>) {
+export function Button({ children, onPress, secondary = false, disabled = false, onPhoto: photo = false }: PropsWithChildren<{ onPress: () => void; secondary?: boolean; disabled?: boolean; onPhoto?: boolean }>) {
+  const textColor = photo ? (secondary ? onPhoto.text : onPhoto.buttonText) : secondary ? colors.secondaryForeground : undefined;
   return <Pressable accessibilityRole="button" accessibilityState={{ disabled }} onPress={onPress} disabled={disabled}
-    style={({ pressed }) => [styles.button, secondary && styles.secondary, (pressed || disabled) && styles.pressed]}>
-    <Text style={[styles.buttonText, secondary && { color: colors.secondaryForeground }]}>{children}</Text>
+    style={({ pressed }) => [styles.button, secondary && styles.secondary, photo && (secondary ? styles.photoSecondary : styles.photoPrimary), (pressed || disabled) && styles.pressed]}>
+    <Text style={[styles.buttonText, photo && styles.photoButtonText, textColor != null && { color: textColor }]}>{children}</Text>
   </Pressable>;
 }
 
-export function Input({ error, ...props }: TextInputProps & { error?: string }) {
+export function Input({ error, onPhoto: photo = false, ...props }: TextInputProps & { error?: string; onPhoto?: boolean }) {
   const [focused, setFocused] = useState(false);
   return <View style={styles.field}>
-    <TextInput {...props} accessibilityLabel={props.accessibilityLabel ?? props.placeholder} placeholderTextColor={colors.ink}
+    <TextInput {...props} accessibilityLabel={props.accessibilityLabel ?? props.placeholder} placeholderTextColor={photo ? onPhoto.muted : colors.ink}
       onFocus={event => { setFocused(true); props.onFocus?.(event); }} onBlur={event => { setFocused(false); props.onBlur?.(event); }}
-      style={[styles.input, focused && styles.focused, !!error && styles.invalid, props.style]} />
-    {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
+      style={photo
+        ? [styles.input, styles.photoInput, focused && styles.photoFocused, !!error && { borderColor: onPhoto.error }, props.style]
+        : [styles.input, focused && styles.focused, !!error && styles.invalid, props.style]} />
+    {error ? <Text accessibilityRole="alert" style={[styles.error, photo && { color: onPhoto.error }]}>{error}</Text> : null}
   </View>;
 }
 
@@ -259,8 +269,7 @@ export function Checkline({ label, detail, checked, onPress }: { label: string; 
 }
 
 const styles = StyleSheet.create({
-  fill: { flex: 1 }, safe: { flex: 1, backgroundColor: colors.background }, transparent: { backgroundColor: 'transparent' },
-  backgroundWash: { flex: 1, backgroundColor: `${colors.background}A6` },
+  fill: { flex: 1 }, cover: { width: '100%', height: '100%' }, safe: { flex: 1, backgroundColor: colors.background }, transparent: { backgroundColor: 'transparent' },
   scroll: { flexGrow: 1 }, content: { flexGrow: 1, width: '100%', maxWidth: 430, alignSelf: 'center', paddingHorizontal: 24, paddingBottom: 32 },
   header: { flexDirection: 'row', alignItems: 'center', marginTop: 24, marginBottom: 36, minHeight: 48 },
   heading: { flex: 1, textAlign: 'center', fontSize: 23, fontWeight: '600', color: colors.ink, letterSpacing: -0.7 },
@@ -272,6 +281,10 @@ const styles = StyleSheet.create({
   secondary: { backgroundColor: colors.secondary }, pressed: { opacity: 0.7 },
   field: { gap: 7 }, input: { minHeight: 72, borderWidth: 1, borderColor: colors.border, borderRadius: 16, paddingHorizontal: 28, paddingVertical: 20, fontSize: 16, color: colors.ink, backgroundColor: colors.surface },
   focused: { borderColor: colors.ink, backgroundColor: colors.focus, borderWidth: 2, paddingHorizontal: 27 },
+  photoInput: { minHeight: 58, paddingVertical: 16, color: onPhoto.text, backgroundColor: onPhoto.field, borderColor: onPhoto.border },
+  photoFocused: { borderColor: onPhoto.text, backgroundColor: onPhoto.fieldFocused, borderWidth: 2, paddingHorizontal: 27 },
+  photoPrimary: { backgroundColor: onPhoto.buttonFill }, photoSecondary: { backgroundColor: onPhoto.field, borderWidth: 1, borderColor: onPhoto.text },
+  photoButtonText: { fontSize: 15, fontWeight: '600' },
   invalid: { borderColor: colors.error }, error: { color: colors.error, fontSize: 13, lineHeight: 18, paddingHorizontal: 4 },
   hero: { backgroundColor: colors.accent, minHeight: 202, borderRadius: 32, padding: 28, alignItems: 'center', justifyContent: 'center', gap: 18 },
   heroTitle: { fontSize: 24, fontWeight: '600', textAlign: 'center', color: colors.accentForeground, letterSpacing: -0.7, lineHeight: 29 },

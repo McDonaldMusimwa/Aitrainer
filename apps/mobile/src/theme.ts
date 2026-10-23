@@ -98,3 +98,18 @@ export type ThemeName = keyof typeof themes;
 // Use one default app-wide for now. Change this to 'classic', 'default', or 'mono' to preview the other palettes.
 export const activeTheme: ThemeName = 'keeper';
 export const colors: AppColors = themes[activeTheme];
+
+// Text and controls drawn over a darkened photo (the auth screens). These sit on the
+// photo's gradient rather than on a palette surface, so they are the same for every theme.
+export const onPhoto = {
+  text: '#FFFFFF',
+  muted: 'rgba(255,255,255,0.8)',
+  field: 'rgba(255,255,255,0.14)',
+  fieldFocused: 'rgba(255,255,255,0.24)',
+  border: 'rgba(255,255,255,0.4)',
+  error: '#FFB4A6',
+  buttonFill: '#FFFFFF',
+  buttonText: '#1C1712',
+  gradient: ['rgba(0,0,0,0.45)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0.78)', 'rgba(0,0,0,0.94)'] as const,
+  gradientStops: [0, 0.28, 0.62, 1] as const,
+};
