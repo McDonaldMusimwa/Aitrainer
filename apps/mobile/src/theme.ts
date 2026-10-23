@@ -1,3 +1,5 @@
+import { createContext, useContext, useMemo } from 'react';
+
 /** Shared semantic colors. Keep screen and component colors in this file. */
 export type AppColors = {
   background: string;
@@ -76,28 +78,71 @@ export const themes = {
     errorBackground: '#FCEBEA',
   },
   // Warm ivory & antique gold, chosen from the design review's palette exploration.
+  // Primary is ink rather than gold: white on #B8892E is only ~3:1, below the 4.5:1 text minimum.
+  // The gold accent is deepened to #8F6A1F for the same reason, as it also carries text.
   keeper: {
     background: '#F7F4EC',
     surface: '#FFFFFF',
     ink: '#1C1712',
     muted: '#6B6152',
-    accent: '#B8892E',
+    accent: '#8F6A1F',
     accentForeground: '#FFFFFF',
     secondary: '#F1ECDF',
     secondaryForeground: '#1C1712',
     border: '#E3DBC7',
-    primary: '#B8892E',
+    primary: '#1C1712',
     primaryForeground: '#FFFFFF',
     focus: '#FBF3DC',
     error: '#A63F2C',
     errorBackground: '#FBEAE6',
   },
+  // Dark counterpart to keeper, matching the photo-backed auth screens: near-black ground,
+  // warm off-white ink and a white primary button.
+  night: {
+    background: '#121110',
+    surface: '#1D1B18',
+    ink: '#F5F2EA',
+    muted: '#A69D8E',
+    accent: '#D1A24A',
+    accentForeground: '#1C1712',
+    secondary: '#2A2622',
+    secondaryForeground: '#F5F2EA',
+    border: '#34302A',
+    primary: '#FFFFFF',
+    primaryForeground: '#1C1712',
+    focus: '#2A2622',
+    error: '#FF8A75',
+    errorBackground: '#3A1F1A',
+  },
 } satisfies Record<string, AppColors>;
 
 export type ThemeName = keyof typeof themes;
-// Use one default app-wide for now. Change this to 'classic', 'default', or 'mono' to preview the other palettes.
-export const activeTheme: ThemeName = 'keeper';
-export const colors: AppColors = themes[activeTheme];
+// The palettes used for light and dark mode. Change lightTheme to 'classic', 'default', or 'mono' to preview the others.
+export const lightTheme: ThemeName = 'keeper';
+export const darkTheme: ThemeName = 'night';
+
+export type ColorScheme = 'light' | 'dark';
+/** What the person picked in Profile › Appearance; 'system' follows the phone's setting. */
+export type ThemePreference = 'system' | ColorScheme;
+
+export type ThemeValue = {
+  colors: AppColors;
+  scheme: ColorScheme;
+  preference: ThemePreference;
+  setPreference: (preference: ThemePreference) => void;
+};
+
+export const ThemeContext = createContext<ThemeValue>({
+  colors: themes[lightTheme], scheme: 'light', preference: 'system', setPreference: () => {},
+});
+
+export const useTheme = () => useContext(ThemeContext);
+
+/** Builds a component's StyleSheet from the active colors, rebuilding only when the theme changes. */
+export function useStyles<T>(makeStyles: (colors: AppColors) => T): T {
+  const { colors } = useTheme();
+  return useMemo(() => makeStyles(colors), [makeStyles, colors]);
+}
 
 // Text and controls drawn over a darkened photo (the auth screens). These sit on the
 // photo's gradient rather than on a palette surface, so they are the same for every theme.
@@ -112,4 +157,10 @@ export const onPhoto = {
   buttonText: '#1C1712',
   gradient: ['rgba(0,0,0,0.45)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0.78)', 'rgba(0,0,0,0.94)'] as const,
   gradientStops: [0, 0.28, 0.62, 1] as const,
+  // Even darkening for content that starts near the top (e.g. a form), where the bottom-weighted
+  // gradient would leave white text over the photo's bright wall.
+  fullGradient: ['rgba(0,0,0,0.62)', 'rgba(0,0,0,0.72)', 'rgba(0,0,0,0.92)'] as const,
+  fullGradientStops: [0, 0.45, 1] as const,
+  track: 'rgba(255,255,255,0.28)',
+  accent: '#E2B85C',
 };

@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Bars, Card, Screen, SectionLabel } from '../components/ui';
-import { colors } from '../theme';
+import { useStyles, type AppColors } from '../theme';
 
 const WEEKLY_ADHERENCE = [
   { label: 'W1', value: 3 },
@@ -12,6 +12,7 @@ const WEEKLY_ADHERENCE = [
 ];
 
 export default function ProgressScreen() {
+  const s = useStyles(makeS);
   return <Screen>
     <Text style={s.title}>Progress</Text>
     <Text style={s.subtitle}>Last 30 days</Text>
@@ -66,7 +67,7 @@ export default function ProgressScreen() {
   </Screen>;
 }
 
-const s = StyleSheet.create({
+const makeS = (colors: AppColors) => StyleSheet.create({
   title: { fontSize: 28, fontWeight: '700', color: colors.ink, marginTop: 24 },
   subtitle: { fontSize: 13, color: colors.muted, marginTop: 2, marginBottom: 20 },
   statRow: { flexDirection: 'row', gap: 10 },

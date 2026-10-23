@@ -1,4 +1,4 @@
-import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
@@ -13,17 +13,29 @@ import { PlanReadyScreen, PlanFirstScreen, PlanWorkoutPreviewScreen } from './sr
 import { TodayWorkoutScreen, ExerciseDetailScreen, WorkoutCompleteScreen, WorkoutAdjustScreen } from './src/screens/WorkoutScreens';
 import MainTabs from './src/screens/MainTabs';
 import ProfileScreen from './src/screens/ProfileScreen';
-import { colors } from './src/theme';
+import { useTheme } from './src/theme';
+import { ThemeProvider } from './src/ThemeProvider';
 import type { RootStackParamList } from './src/navigation';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
-const theme = { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: colors.background, card: colors.surface, text: colors.ink, border: colors.border, primary: colors.primary, notification: colors.accent } };
 const queryClient = new QueryClient();
 
 export default function App() {
   return <QueryClientProvider client={queryClient}>
   <SafeAreaProvider>
-    <StatusBar style="dark" />
+    <ThemeProvider>
+      <AppNavigator />
+    </ThemeProvider>
+  </SafeAreaProvider>
+  </QueryClientProvider>;
+}
+
+function AppNavigator() {
+  const { colors, scheme } = useTheme();
+  const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
+  const theme = { ...base, colors: { ...base.colors, background: colors.background, card: colors.surface, text: colors.ink, border: colors.border, primary: colors.primary, notification: colors.accent } };
+  return <>
+    <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
     <NavigationContainer<RootStackParamList>
       theme={theme}
       linking={{
@@ -70,6 +82,5 @@ export default function App() {
         <Stack.Screen name="Profile" component={ProfileScreen} />
       </Stack.Navigator>
     </NavigationContainer>
-  </SafeAreaProvider>
-  </QueryClientProvider>;
+  </>;
 }

@@ -3,7 +3,7 @@ import type { CompositeScreenProps } from '@react-navigation/native';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Card, Pill, Screen, SectionLabel } from '../components/ui';
-import { colors } from '../theme';
+import { useStyles, type AppColors } from '../theme';
 import { planDays } from '../data/plan';
 import type { MainTabParamList, RootStackParamList } from '../navigation';
 
@@ -12,6 +12,7 @@ type Props = CompositeScreenProps<BottomTabScreenProps<MainTabParamList, 'Plan'>
 const EQUIPMENT = ['Barbell', 'Dumbbells', 'Cable machine', 'Bench'];
 
 export default function PlanTabScreen({ navigation }: Props) {
+  const s = useStyles(makeS);
   return <Screen>
     <Text style={s.title}>Plan</Text>
     <View style={s.pillRow}>
@@ -54,7 +55,7 @@ export default function PlanTabScreen({ navigation }: Props) {
   </Screen>;
 }
 
-const s = StyleSheet.create({
+const makeS = (colors: AppColors) => StyleSheet.create({
   title: { fontSize: 28, fontWeight: '700', color: colors.ink, marginTop: 24, marginBottom: 16 },
   pillRow: { flexDirection: 'row', gap: 10 },
   section: { marginTop: 28 }, dayList: { gap: 12 },

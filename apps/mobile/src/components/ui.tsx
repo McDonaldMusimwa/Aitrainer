@@ -1,4 +1,4 @@
-import { createElement, useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react';
+import { createElement, useEffect, useMemo, useRef, useState, type PropsWithChildren, type ReactNode } from 'react';
 import {
   ImageBackground, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
   type ImageSourcePropType, type NativeScrollEvent, type NativeSyntheticEvent, type TextInputProps,
@@ -9,28 +9,39 @@ import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
-import { colors, onPhoto } from '../theme';
+import { onPhoto, useStyles, useTheme, type AppColors } from '../theme';
 
-export function Screen({ children, background }: PropsWithChildren<{ background?: ImageSourcePropType }>) {
+export function Screen({ children, background, scrim = 'bottom', footer }: PropsWithChildren<{
+  background?: ImageSourcePropType;
+  /** 'bottom' suits content pushed to the bottom; 'full' darkens evenly for content that starts near the top. */
+  scrim?: 'bottom' | 'full';
+  /** Pinned below the scrolling content (e.g. a Continue button), so it never scrolls out of reach. */
+  footer?: ReactNode;
+}>) {
+  const styles = useStyles(makeStyles);
   const focused = useIsFocused();
-  const body = <SafeAreaView style={[styles.safe, background != null && styles.transparent]}>
+  const photo = background != null;
+  const body = <SafeAreaView style={[styles.safe, photo && styles.transparent]}>
     <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
         <View style={styles.content}>{children}</View>
       </ScrollView>
+      {footer != null && <View style={[styles.footer, photo && styles.footerOnPhoto]}><View style={styles.footerInner}>{footer}</View></View>}
     </KeyboardAvoidingView>
   </SafeAreaView>;
-  if (background == null) return body;
-  // The gradient darkens the top (status bar, back button) and most of the bottom half,
-  // where the white text and controls sit; use the onPhoto variants of the controls on it.
+  if (!photo) return body;
+  // The gradient darkens the photo where white text and controls sit; use the onPhoto variants of the controls on it.
+  const gradient = scrim === 'full' ? onPhoto.fullGradient : onPhoto.gradient;
+  const stops = scrim === 'full' ? onPhoto.fullGradientStops : onPhoto.gradientStops;
   return <ImageBackground source={background} resizeMode="cover" style={styles.fill} imageStyle={styles.cover}>
     {focused && <StatusBar style="light" />}
-    <LinearGradient colors={onPhoto.gradient} locations={onPhoto.gradientStops} style={StyleSheet.absoluteFill} />
+    <LinearGradient colors={gradient} locations={stops} style={StyleSheet.absoluteFill} />
     {body}
   </ImageBackground>;
 }
 
 export function Header({ title, onBack, onPhoto: photo = false }: { title: string; onBack: () => void; onPhoto?: boolean }) {
+  const styles = useStyles(makeStyles);
   return <View style={styles.header}>
     <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={onBack} hitSlop={8} style={styles.backTarget}>
       <View style={[styles.backCircle, photo && { borderColor: onPhoto.text }]}><Text style={[styles.arrow, photo && { color: onPhoto.text }]}>←</Text></View>
@@ -41,6 +52,8 @@ export function Header({ title, onBack, onPhoto: photo = false }: { title: strin
 }
 
 export function Button({ children, onPress, secondary = false, disabled = false, onPhoto: photo = false }: PropsWithChildren<{ onPress: () => void; secondary?: boolean; disabled?: boolean; onPhoto?: boolean }>) {
+  const { colors } = useTheme();
+  const styles = useStyles(makeStyles);
   const textColor = photo ? (secondary ? onPhoto.text : onPhoto.buttonText) : secondary ? colors.secondaryForeground : undefined;
   return <Pressable accessibilityRole="button" accessibilityState={{ disabled }} onPress={onPress} disabled={disabled}
     style={({ pressed }) => [styles.button, secondary && styles.secondary, photo && (secondary ? styles.photoSecondary : styles.photoPrimary), (pressed || disabled) && styles.pressed]}>
@@ -49,6 +62,8 @@ export function Button({ children, onPress, secondary = false, disabled = false,
 }
 
 export function Input({ error, onPhoto: photo = false, ...props }: TextInputProps & { error?: string; onPhoto?: boolean }) {
+  const { colors } = useTheme();
+  const styles = useStyles(makeStyles);
   const [focused, setFocused] = useState(false);
   return <View style={styles.field}>
     <TextInput {...props} accessibilityLabel={props.accessibilityLabel ?? props.placeholder} placeholderTextColor={photo ? onPhoto.muted : colors.ink}
@@ -68,6 +83,7 @@ const toIsoDate = (date: Date) =>
 // there, so web gets a real <input type="date"> instead — the browser's
 // own calendar picker — styled to match Input.
 function WebDateField({ value, onChange, placeholder }: { value?: string; onChange: (isoDate: string) => void; placeholder: string }) {
+  const { colors } = useTheme();
   return createElement('input', {
     type: 'date',
     value: value ?? '',
@@ -84,6 +100,9 @@ function WebDateField({ value, onChange, placeholder }: { value?: string; onChan
 
 /** A tappable field that opens the native calendar picker (a real date input on web). */
 export function DateField({ value, onChange, placeholder = 'Date of birth' }: { value?: string; onChange: (isoDate: string) => void; placeholder?: string }) {
+  const { colors, scheme } = useTheme();
+  const styles = useStyles(makeStyles);
+  const extra = useStyles(makeExtra);
   const [show, setShow] = useState(false);
   const selected = value ? new Date(`${value}T00:00:00`) : new Date(2000, 0, 1);
 
@@ -104,7 +123,7 @@ export function DateField({ value, onChange, placeholder = 'Date of birth' }: { 
       <Text style={{ fontSize: 16, color: colors.ink }}>{label}</Text>
     </Pressable>
     {show && <DateTimePicker
-      value={selected} mode="date" maximumDate={new Date()}
+      value={selected} mode="date" maximumDate={new Date()} themeVariant={scheme}
       display={Platform.OS === 'ios' ? 'inline' : 'default'}
       onChange={handleChange}
     />}
@@ -120,9 +139,11 @@ const SCROLLER_ITEM_HEIGHT = 44;
 const SCROLLER_VISIBLE_ITEMS = 3;
 
 /** A scrollable, snap-to-value number picker — no typing, matches Input's width. */
-export function NumberScroller({ value, onChange, min, max, step = 1, suffix, label }: {
-  value: number; onChange: (value: number) => void; min: number; max: number; step?: number; suffix?: string; label: string;
+export function NumberScroller({ value, onChange, min, max, step = 1, suffix, label, onPhoto: photo = false }: {
+  value: number; onChange: (value: number) => void; min: number; max: number; step?: number; suffix?: string; label: string; onPhoto?: boolean;
 }) {
+  const styles = useStyles(makeStyles);
+  const extra = useStyles(makeExtra);
   const listRef = useRef<ScrollView>(null);
   const values = useMemo(() => {
     const list: number[] = [];
@@ -161,7 +182,7 @@ export function NumberScroller({ value, onChange, min, max, step = 1, suffix, la
   }
 
   return <View style={styles.field}>
-    <Text style={extra.scrollerLabel}>{label}</Text>
+    <Text style={[extra.scrollerLabel, photo && { color: onPhoto.muted }]}>{label}</Text>
     <View style={[extra.scrollerFrame, { height: SCROLLER_ITEM_HEIGHT * SCROLLER_VISIBLE_ITEMS }]}>
       <View pointerEvents="none" style={[extra.scrollerHighlight, { top: padding, height: SCROLLER_ITEM_HEIGHT }]} />
       <ScrollView
@@ -184,6 +205,7 @@ export function NumberScroller({ value, onChange, min, max, step = 1, suffix, la
 }
 
 export function Hero({ title, subtitle }: { title: string; subtitle: string }) {
+  const styles = useStyles(makeStyles);
   return <View style={styles.hero}>
     <Text accessibilityRole="header" style={styles.heroTitle}>{title}</Text>
     <Text style={styles.heroSubtitle}>{subtitle}</Text>
@@ -191,15 +213,19 @@ export function Hero({ title, subtitle }: { title: string; subtitle: string }) {
 }
 
 export function Notice({ children }: PropsWithChildren) {
+  const styles = useStyles(makeStyles);
   return <View style={styles.notice}><Text accessibilityRole="alert" style={styles.noticeText}>{children}</Text></View>;
 }
 
 export function ProgressTrack({ step, total }: { step: number; total: number }) {
+  const extra = useStyles(makeExtra);
   const pct = Math.max(0, Math.min(1, step / total));
   return <View style={extra.track}><View style={[extra.trackFill, { width: `${pct * 100}%` }]} /></View>;
 }
 
 export function Card({ children, onPress }: PropsWithChildren<{ onPress?: () => void }>) {
+  const styles = useStyles(makeStyles);
+  const extra = useStyles(makeExtra);
   const Wrapper = onPress ? Pressable : View;
   return <Wrapper accessibilityRole={onPress ? 'button' : undefined} onPress={onPress} style={({ pressed }: any) => [extra.card, onPress && pressed && styles.pressed]}>
     {children}
@@ -207,6 +233,8 @@ export function Card({ children, onPress }: PropsWithChildren<{ onPress?: () => 
 }
 
 export function OptionTile({ label, sublabel, selected, onPress }: { label: string; sublabel?: string; selected: boolean; onPress: () => void }) {
+  const styles = useStyles(makeStyles);
+  const extra = useStyles(makeExtra);
   return <Pressable accessibilityRole="button" accessibilityState={{ selected }} onPress={onPress}
     style={({ pressed }) => [extra.tile, selected && extra.tileSelected, pressed && styles.pressed]}>
     <Text style={[extra.tileLabel, selected && extra.tileLabelSelected]}>{label}</Text>
@@ -215,6 +243,8 @@ export function OptionTile({ label, sublabel, selected, onPress }: { label: stri
 }
 
 export function Pill({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+  const styles = useStyles(makeStyles);
+  const extra = useStyles(makeExtra);
   return <Pressable accessibilityRole="button" accessibilityState={{ selected }} onPress={onPress}
     style={({ pressed }) => [extra.pill, selected && extra.pillSelected, pressed && styles.pressed]}>
     <Text style={[extra.pillLabel, selected && extra.pillLabelSelected]}>{label}</Text>
@@ -222,14 +252,18 @@ export function Pill({ label, selected, onPress }: { label: string; selected: bo
 }
 
 export function TextArea(props: TextInputProps & { error?: string }) {
+  const extra = useStyles(makeExtra);
   return <Input {...props} multiline numberOfLines={5} textAlignVertical="top" style={[extra.textArea, props.style]} />;
 }
 
 export function SectionLabel({ children }: PropsWithChildren) {
+  const extra = useStyles(makeExtra);
   return <Text style={extra.sectionLabel}>{children}</Text>;
 }
 
 export function Row({ label, value, onPress }: { label: string; value?: string; onPress?: () => void }) {
+  const styles = useStyles(makeStyles);
+  const extra = useStyles(makeExtra);
   const Wrapper = onPress ? Pressable : View;
   return <Wrapper accessibilityRole={onPress ? 'button' : undefined} onPress={onPress} style={({ pressed }: any) => [extra.row, onPress && pressed && styles.pressed]}>
     <Text style={extra.rowLabel}>{label}</Text>
@@ -241,6 +275,7 @@ export function Row({ label, value, onPress }: { label: string; value?: string; 
 }
 
 export function StatTile({ label, value }: { label: string; value: string }) {
+  const extra = useStyles(makeExtra);
   return <View style={extra.stat}>
     <Text style={extra.statValue}>{value}</Text>
     <Text style={extra.statLabel}>{label}</Text>
@@ -248,6 +283,7 @@ export function StatTile({ label, value }: { label: string; value: string }) {
 }
 
 export function Bars({ data }: { data: { label: string; value: number }[] }) {
+  const extra = useStyles(makeExtra);
   const max = Math.max(1, ...data.map(d => d.value));
   return <View style={extra.bars}>
     {data.map(d => <View key={d.label} style={extra.barColumn}>
@@ -258,6 +294,8 @@ export function Bars({ data }: { data: { label: string; value: number }[] }) {
 }
 
 export function Checkline({ label, detail, checked, onPress }: { label: string; detail?: string; checked: boolean; onPress: () => void }) {
+  const styles = useStyles(makeStyles);
+  const extra = useStyles(makeExtra);
   return <Pressable accessibilityRole="checkbox" accessibilityState={{ checked }} onPress={onPress}
     style={({ pressed }) => [extra.checkline, checked && extra.checklineDone, pressed && styles.pressed]}>
     <View style={[extra.checkbox, checked && extra.checkboxDone]}>{checked ? <Text style={extra.checkmark}>✓</Text> : null}</View>
@@ -268,8 +306,10 @@ export function Checkline({ label, detail, checked, onPress }: { label: string; 
   </Pressable>;
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: AppColors) => StyleSheet.create({
   fill: { flex: 1 }, cover: { width: '100%', height: '100%' }, safe: { flex: 1, backgroundColor: colors.background }, transparent: { backgroundColor: 'transparent' },
+  footer: { borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background, paddingHorizontal: 24, paddingTop: 14, paddingBottom: 14 },
+  footerOnPhoto: { borderTopWidth: 0, backgroundColor: 'transparent' }, footerInner: { width: '100%', maxWidth: 382, alignSelf: 'center' },
   scroll: { flexGrow: 1 }, content: { flexGrow: 1, width: '100%', maxWidth: 430, alignSelf: 'center', paddingHorizontal: 24, paddingBottom: 32 },
   header: { flexDirection: 'row', alignItems: 'center', marginTop: 24, marginBottom: 36, minHeight: 48 },
   heading: { flex: 1, textAlign: 'center', fontSize: 23, fontWeight: '600', color: colors.ink, letterSpacing: -0.7 },
@@ -293,7 +333,7 @@ const styles = StyleSheet.create({
   noticeText: { fontSize: 14, lineHeight: 21, color: colors.secondaryForeground },
 });
 
-const extra = StyleSheet.create({
+const makeExtra = (colors: AppColors) => StyleSheet.create({
   doneButton: { marginTop: 12 },
   scrollerLabel: { fontSize: 13, fontWeight: '600', color: colors.muted, marginBottom: 4 },
   scrollerFrame: { borderWidth: 1, borderColor: colors.border, borderRadius: 16, backgroundColor: colors.surface, overflow: 'hidden' },
