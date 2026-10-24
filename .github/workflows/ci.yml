@@ -7,10 +7,11 @@ on:
     branches: [main]
   workflow_dispatch:
 
-# A newer push to the same branch cancels the older run, saving minutes.
+# A newer push to a PR cancels its older run, saving minutes. Runs on main
+# are grouped per commit, so every merge commit gets tested.
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
