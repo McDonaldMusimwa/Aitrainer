@@ -97,7 +97,9 @@ GEMINI_MODEL=gemini-3.6-flash
 
 Then recreate the agent: `docker compose up -d --force-recreate agent`.
 
-Provider errors are returned as API errors; the agent never silently substitutes demo output.
+Chat replies are streamed. `POST /api/v1/chat` answers with `text/event-stream`: `delta` events carry text as the model writes it, then exactly one `done` event (with the saved exchange) or one `error` event. Validation errors still return 422 before the stream starts; all later failures arrive as an `error` event, because the status is already 200 by then. Timeouts only fire when no data arrives for a while (agent → model 60 s, backend → agent 70 s, app 60 s), so long replies that keep producing text are not cut off. The backend saves the exchange once the reply finishes, even if the app disconnected partway; failed or incomplete replies are not saved. The app reads the stream with `expo/fetch`, because React Native's built-in `fetch` cannot. Ollama keeps the model loaded for `OLLAMA_KEEP_ALIVE` (default `30m`) to avoid slow first replies.
+
+Provider errors are reported as stream errors; the agent never silently substitutes demo output.
 Add other provider adapters inside `services/agent/app/`; keep provider secrets on the server.
 Agent requests are currently single-turn; saved exchanges are history, not model conversation memory.
 
@@ -112,7 +114,7 @@ npx tsc --noEmit
 npx expo install --check
 ```
 
-The smoke test creates one saved exchange. Agent health checks process availability; model availability is checked when sending a message.
+The smoke test creates one saved exchange, checks that its reply was streamed in chunks, and prints how quickly the first text arrived. Agent health checks process availability; model availability is checked when sending a message.
 
 ## Database changes
 

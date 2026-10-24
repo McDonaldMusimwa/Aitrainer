@@ -13,3 +13,9 @@ class Base(DeclarativeBase):
 def get_db():
     with SessionLocal() as session:
         yield session
+
+
+def get_session_factory():
+    """For work that outlives the request, such as saving a streamed reply
+    after the client has disconnected."""
+    return SessionLocal
