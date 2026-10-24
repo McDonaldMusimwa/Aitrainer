@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button, Card, Checkline, Header, Hero, Input, NumberScroller, Pill, Screen, SectionLabel, TextArea } from '../components/ui';
-import { colors } from '../theme';
+import { useStyles, type AppColors } from '../theme';
 import { findDay } from '../data/plan';
 import type { RootStackParamList } from '../navigation';
 
@@ -20,6 +20,7 @@ function useElapsed() {
 }
 
 export function TodayWorkoutScreen({ navigation, route }: Props<'TodayWorkout'>) {
+  const s = useStyles(makeS);
   const day = findDay(route.params?.day);
   const done = route.params?.done ?? [];
   const elapsed = useElapsed();
@@ -40,6 +41,7 @@ export function TodayWorkoutScreen({ navigation, route }: Props<'TodayWorkout'>)
 }
 
 export function ExerciseDetailScreen({ navigation, route }: Props<'ExerciseDetail'>) {
+  const s = useStyles(makeS);
   const day = findDay(route.params?.day);
   const exercise = day.exercises.find(e => e.name === route.params?.exercise) ?? day.exercises[0];
   const [setsDone, setSetsDone] = useState<boolean[]>(() => Array(exercise.sets).fill(false));
@@ -75,6 +77,7 @@ export function ExerciseDetailScreen({ navigation, route }: Props<'ExerciseDetai
 const DIFFICULTY = ['Easy', 'Challenging'];
 const SORENESS = ['Not much', 'Very sore'];
 export function WorkoutCompleteScreen({ navigation, route }: Props<'WorkoutComplete'>) {
+  const s = useStyles(makeS);
   const day = findDay(route.params?.day);
   const [difficulty, setDifficulty] = useState(DIFFICULTY[0]);
   const [soreness, setSoreness] = useState(SORENESS[0]);
@@ -101,6 +104,7 @@ export function WorkoutCompleteScreen({ navigation, route }: Props<'WorkoutCompl
 
 const EQUIPMENT_OPTIONS = ['Dumbbells', 'Barbell'];
 export function WorkoutAdjustScreen({ navigation }: Props<'WorkoutAdjust'>) {
+  const s = useStyles(makeS);
   const [equipment, setEquipment] = useState(EQUIPMENT_OPTIONS[0]);
   const [message, setMessage] = useState('');
   return <Screen>
@@ -124,7 +128,7 @@ export function WorkoutAdjustScreen({ navigation }: Props<'WorkoutAdjust'>) {
   </Screen>;
 }
 
-const s = StyleSheet.create({
+const makeS = (colors: AppColors) => StyleSheet.create({
   timer: { fontSize: 15, fontWeight: '600', color: colors.muted, marginBottom: 20 },
   list: { gap: 0 }, continue: { marginTop: 36 },
   big: { fontSize: 28, fontWeight: '700', color: colors.ink, marginTop: 8 },

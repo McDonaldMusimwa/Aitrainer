@@ -1,13 +1,14 @@
 import { StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button, Card, Header, Hero, Pill, Screen, SectionLabel } from '../components/ui';
-import { colors } from '../theme';
+import { useStyles, type AppColors } from '../theme';
 import { planDays, findDay } from '../data/plan';
 import type { RootStackParamList } from '../navigation';
 
 type Props<T extends keyof RootStackParamList> = NativeStackScreenProps<RootStackParamList, T>;
 
 export function PlanReadyScreen({ navigation }: Props<'PlanReady'>) {
+  const s = useStyles(makeS);
   return <Screen>
     <Header title="Your assessment" onBack={() => navigation.goBack()} />
     <Hero title="Ready to build" subtitle="Preferred training style, progress and goals set as intended." />
@@ -20,6 +21,7 @@ export function PlanReadyScreen({ navigation }: Props<'PlanReady'>) {
 }
 
 export function PlanFirstScreen({ navigation }: Props<'PlanFirst'>) {
+  const s = useStyles(makeS);
   return <Screen>
     <Header title="Your first plan" onBack={() => navigation.goBack()} />
     <View style={s.pillRow}>
@@ -38,6 +40,7 @@ export function PlanFirstScreen({ navigation }: Props<'PlanFirst'>) {
 }
 
 export function PlanWorkoutPreviewScreen({ navigation, route }: Props<'PlanWorkoutPreview'>) {
+  const s = useStyles(makeS);
   const day = findDay(route.params?.day);
   return <Screen>
     <Header title={day.label} onBack={() => navigation.goBack()} />
@@ -52,7 +55,7 @@ export function PlanWorkoutPreviewScreen({ navigation, route }: Props<'PlanWorko
   </Screen>;
 }
 
-const s = StyleSheet.create({
+const makeS = (colors: AppColors) => StyleSheet.create({
   section: { marginTop: 32, gap: 8 }, copy: { fontSize: 14, lineHeight: 21, color: colors.muted },
   pillRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
   schedule: { fontSize: 13, color: colors.muted, marginTop: 12, marginBottom: 20 },

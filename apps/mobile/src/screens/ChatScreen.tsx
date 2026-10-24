@@ -4,10 +4,12 @@ import {
   ActivityIndicator, FlatList, KeyboardAvoidingView, Platform,
   Pressable, StyleSheet, Text, TextInput, View,
 } from 'react-native';
-import { colors } from '../theme';
+import { useStyles, useTheme, type AppColors } from '../theme';
 import { Exchange, getHistory, sendMessage } from '../api';
 
 export default function ChatScreen() {
+  const { colors } = useTheme();
+  const styles = useStyles(makeStyles);
   const [history, setHistory] = useState<Exchange[]>([]);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -91,7 +93,7 @@ export default function ChatScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: AppColors) => StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.background },
   content: { flex: 1, width: '100%', maxWidth: 780, alignSelf: 'center', padding: 24, paddingTop: 64, paddingBottom: 36 },
   eyebrow: { color: colors.ink, fontSize: 11, fontWeight: '700', letterSpacing: 2 },

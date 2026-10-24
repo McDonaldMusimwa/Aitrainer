@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { createBottomTabNavigator, type BottomTabBarButtonProps } from '@react-navigation/bottom-tabs';
-import { colors } from '../theme';
+import { useStyles, useTheme, type AppColors } from '../theme';
 import HomeScreen from '../screens/HomeScreen';
 import PlanTabScreen from '../screens/PlanTabScreen';
 import ChatScreen from '../screens/ChatScreen';
@@ -11,10 +11,13 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 const TAB_ICON: Record<keyof MainTabParamList, string> = { Home: '⌂', Plan: '▤', Coach: '◎', Progress: '↗' };
 
 function TabButton({ children, ...props }: BottomTabBarButtonProps) {
+  const styles = useStyles(makeStyles);
   return <Pressable {...(props as any)} style={styles.tabButton}>{children}</Pressable>;
 }
 
 export default function MainTabs() {
+  const { colors } = useTheme();
+  const styles = useStyles(makeStyles);
   return <Tab.Navigator
     screenOptions={({ route }) => ({
       headerShown: false,
@@ -33,7 +36,7 @@ export default function MainTabs() {
   </Tab.Navigator>;
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: AppColors) => StyleSheet.create({
   tabBar: { backgroundColor: colors.surface, borderTopColor: colors.border, height: 64, paddingTop: 8, paddingBottom: 10 },
   tabLabel: { fontSize: 11, fontWeight: '600' },
   icon: { fontSize: 20 },
