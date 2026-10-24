@@ -3,10 +3,8 @@ name: CI
 on:
   push:
     branches: [main]
-    paths-ignore: ["**.md"]
   pull_request:
     branches: [main]
-    paths-ignore: ["**.md"]
   workflow_dispatch:
 
 # A newer push to the same branch cancels the older run, saving minutes.
@@ -18,8 +16,33 @@ permissions:
   contents: read
 
 jobs:
+  # Docs-only changes skip the test jobs instead of not triggering at all,
+  # so the required "CI passed" check still reports and the PR stays mergeable.
+  changes:
+    name: detect code changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: filter
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [ "${{ github.event_name }}" = workflow_dispatch ] || [ -z "$BASE" ] || [ "$BASE" = 0000000000000000000000000000000000000000 ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          git diff --name-only "$BASE" "$GITHUB_SHA" | tee changed.txt
+          if grep -qvE '\.md$' changed.txt; then code=true; else code=false; fi
+          echo "code=$code" | tee -a "$GITHUB_OUTPUT"
+
   python-tests:
     name: ${{ matrix.service }} tests
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
@@ -41,6 +64,8 @@ jobs:
 
   mobile-typecheck:
     name: mobile typecheck
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -74,3 +99,15 @@ jobs:
         run: docker compose logs --no-color
       - if: always()
         run: docker compose down -v
+
+  # The one check to mark as required: passes when every job succeeded or was skipped.
+  ci-passed:
+    name: CI passed
+    needs: [changes, python-tests, mobile-typecheck, smoke]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1
+      - run: echo "All checks passed or were skipped."
