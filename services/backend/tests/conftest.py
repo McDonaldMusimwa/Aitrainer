@@ -1,10 +1,10 @@
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 from app.main import app
-from app.database import Base, get_db
+from app.database import Base, get_db, get_session_factory
 
 
 @pytest.fixture
@@ -17,6 +17,7 @@ def client():
             yield session
 
     app.dependency_overrides[get_db] = database
+    app.dependency_overrides[get_session_factory] = lambda: sessionmaker(bind=engine)
     with TestClient(app) as client:
         yield client
     app.dependency_overrides.clear()
