@@ -68,6 +68,12 @@ services:
       - "${WEB_PORT:-5173}:5173"
     environment:
       API_PROXY_TARGET: http://backend:8000
+      VITE_USE_POLLING: "true"
+    # Live source for hot reload. The anonymous volume keeps the image's
+    # Linux node_modules instead of the host's.
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
     depends_on:
       backend:
         condition: service_healthy
