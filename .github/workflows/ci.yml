@@ -82,9 +82,28 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
 
+  web-build:
+    name: web build
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - run: npm ci
+      - run: npm run build
+
   smoke:
     name: compose smoke test
-    needs: [python-tests, mobile-typecheck]
+    needs: [python-tests, mobile-typecheck, web-build]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -123,7 +142,7 @@ jobs:
   # The one check to mark as required: passes when every job succeeded or was skipped.
   ci-passed:
     name: CI passed
-    needs: [changes, python-tests, mobile-typecheck, smoke]
+    needs: [changes, python-tests, mobile-typecheck, web-build, smoke]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 2

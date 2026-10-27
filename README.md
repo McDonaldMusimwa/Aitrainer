@@ -3,7 +3,8 @@
 React Native + Expo (TypeScript), FastAPI, PostgreSQL, and a separate Python agent service.
 
 ```text
-apps/mobile -> backend:8000 -> agent:8001 -> optional AI provider
+apps/mobile ─┐
+apps/web    ─┴> backend:8000 -> agent:8001 -> optional AI provider
                     |
                 PostgreSQL
 ```
@@ -11,9 +12,10 @@ apps/mobile -> backend:8000 -> agent:8001 -> optional AI provider
 ## Structure
 
 - `apps/mobile/`: Expo app for Android, iOS, and web.
+- `apps/web/`: React + TypeScript web app (Vite, TanStack Query).
 - `services/backend/`: API, SQLAlchemy models, and Alembic migrations.
 - `services/agent/`: internal agent HTTP API and provider integration.
-- `compose.yaml`: database, migration job, backend, agent, optional Expo container.
+- `compose.yaml`: database, migration job, backend, agent, web, optional Expo container.
 - `scripts/smoke.mjs`: end-to-end API and persistence check.
 
 ## Start development
@@ -62,6 +64,20 @@ docker compose --profile mobile up --build
 ```
 
 Open http://localhost:8081. For native devices, set `REACT_NATIVE_PACKAGER_HOSTNAME` to the computer's LAN IP and `EXPO_PUBLIC_API_URL` to its API URL in the root `.env`. Recreate the mobile container. Local Expo is usually easier for device development. Container source is copied at build time; rebuild after edits.
+
+### Web app
+
+`docker compose up --build -d` also starts the Vite web app at http://localhost:5173 (set `WEB_PORT` in the root `.env` to change it). Container source is copied at build time; rebuild after edits.
+
+For day-to-day work, run it locally for hot reload, with the backend running in Docker:
+
+```powershell
+cd apps/web
+npm ci
+npm run dev
+```
+
+The Vite dev server proxies `/api` and `/health` to the backend (`http://localhost:8000` locally, `http://backend:8000` in Compose, set via `API_PROXY_TARGET`), so the browser stays on one origin and `CORS_ORIGINS` needs no change. To call a backend on another origin directly, set `VITE_API_URL` in `apps/web/.env` and add the web origin to `CORS_ORIGINS`. Server state uses TanStack Query; the `QueryClientProvider` is in `src/main.tsx` and API helpers are in `src/api.ts`. `npm run build` typechecks and produces `dist/`.
 
 ## Account screen preview
 
