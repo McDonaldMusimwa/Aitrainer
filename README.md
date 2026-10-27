@@ -67,9 +67,9 @@ Open http://localhost:8081. For native devices, set `REACT_NATIVE_PACKAGER_HOSTN
 
 ### Web app
 
-`docker compose up --build -d` also starts the Vite web app at http://localhost:5173 (set `WEB_PORT` in the root `.env` to change it). Container source is copied at build time; rebuild after edits.
+`docker compose up --build -d` also starts the Vite web app at http://localhost:5173 (set `WEB_PORT` in the root `.env` to change it). `apps/web` is bind-mounted into the container, so edits hot-reload; Vite polls for changes (`VITE_USE_POLLING`) because Docker Desktop on Windows doesn't forward file events. The container keeps its own `node_modules`, so after changing dependencies run `docker compose up -d --build -V web` (`-V` replaces the stale `node_modules` volume).
 
-For day-to-day work, run it locally for hot reload, with the backend running in Docker:
+To run it outside Docker instead, stop the container first (`docker compose stop web`) so the port is free, with the backend still running in Docker:
 
 ```powershell
 cd apps/web
@@ -78,6 +78,14 @@ npm run dev
 ```
 
 The Vite dev server proxies `/api` and `/health` to the backend (`http://localhost:8000` locally, `http://backend:8000` in Compose, set via `API_PROXY_TARGET`), so the browser stays on one origin and `CORS_ORIGINS` needs no change. To call a backend on another origin directly, set `VITE_API_URL` in `apps/web/.env` and add the web origin to `CORS_ORIGINS`. Server state uses TanStack Query; the `QueryClientProvider` is in `src/main.tsx` and API helpers are in `src/api.ts`. `npm run build` typechecks and produces `dist/`.
+
+Styling is Tailwind CSS v4 (via `@tailwindcss/vite`, configured in `src/index.css`, with the keeper palette as `ivory`, `ink`, `taupe`, `sand`, `gold` colors) and shadcn/ui components in `src/components/ui/` (add more with `npx shadcn@latest add <component>`). `@/` maps to `src/`.
+
+Routing uses TanStack Router with file-based routes: each file in `src/routes/` is a page (`login.tsx` → `/login`), and `__root.tsx` wraps them all. The Vite plugin regenerates `src/routeTree.gen.ts` whenever routes change; don't edit it by hand.
+
+#### Design
+
+The web client design (Home, Coach, Plan, Progress, and the Log in / Sign up / Forgot password screens) is on a design canvas: [Aitrainer Web Client design](https://claude.ai/artifact/XsECApVYbtGSW4YA1VWbMJ#page-dcb81aee8d83). It uses the mobile app's keeper theme and copy. Open a screen and press Play to click through it. The canvas is private to its owner until shared from its Share menu.
 
 ## Account screen preview
 
