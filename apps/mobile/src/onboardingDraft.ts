@@ -28,6 +28,9 @@ export type OnboardingDraft = {
   equipment: EquipmentType[];
   /** Free text; empty means "nothing to report" and no HealthConstraint is sent. */
   healthDescription: string;
+  /** UI-only: the Health step's body-area chips and notes, kept so the step reopens as left. healthDescription is built from them. */
+  healthAreas: string[];
+  healthNotes: string;
   dietaryPattern: DietaryPattern;
   allergies: string[];
 };
@@ -41,6 +44,8 @@ const defaults: OnboardingDraft = {
   trainingLocation: 'COMMERCIAL_GYM',
   equipment: ['BARBELL', 'DUMBBELL', 'BENCH', 'CABLE_MACHINE', 'CARDIO_MACHINE'],
   healthDescription: '',
+  healthAreas: [],
+  healthNotes: '',
   dietaryPattern: 'NO_PREFERENCE',
   allergies: [],
 };
@@ -82,3 +87,9 @@ export const DIET_OPTIONS: Record<string, DietaryPattern> = {
   'Vegan': 'VEGAN',
   'Low carb': 'OTHER',
 };
+
+/** Combines the Health step's chips and notes into the free-text description the API takes. */
+export const describeHealth = (areas: string[], notes: string) => [
+  areas.length ? `Areas to plan around: ${areas.join(', ')}.` : '',
+  notes.trim(),
+].filter(Boolean).join(' ');

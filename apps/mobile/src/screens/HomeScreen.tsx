@@ -3,13 +3,14 @@ import type { CompositeScreenProps } from '@react-navigation/native';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button, Card, Screen, SectionLabel } from '../components/ui';
-import { colors } from '../theme';
+import { useStyles, type AppColors } from '../theme';
 import { findDay } from '../data/plan';
 import type { MainTabParamList, RootStackParamList } from '../navigation';
 
 type Props = CompositeScreenProps<BottomTabScreenProps<MainTabParamList, 'Home'>, NativeStackScreenProps<RootStackParamList>>;
 
 export default function HomeScreen({ navigation }: Props) {
+  const s = useStyles(makeS);
   const today = findDay('A');
   return <Screen>
     <View style={s.topBar}>
@@ -49,7 +50,7 @@ export default function HomeScreen({ navigation }: Props) {
   </Screen>;
 }
 
-const s = StyleSheet.create({
+const makeS = (colors: AppColors) => StyleSheet.create({
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, marginBottom: 26 },
   eyebrow: { fontSize: 12, fontWeight: '600', color: colors.muted },
   greeting: { fontSize: 18, fontWeight: '700', color: colors.ink, marginTop: 2 },
