@@ -6,8 +6,9 @@ import {
 } from 'react-native';
 import { useStyles, useTheme, type AppColors } from '../theme';
 import { Exchange, getHistory, sendMessage } from '../api';
+import { useStreamedText } from '../useStreamedText';
 
-type PendingReply = { prompt: string; reply: string; failed?: boolean };
+type PendingReply = { prompt: string; failed?: boolean };
 type ListItem = Exchange & { failed?: boolean };
 
 function badge(item: ListItem) {
@@ -24,11 +25,13 @@ export default function ChatScreen() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [pending, setPending] = useState<PendingReply | null>(null);
+  const reply = useStreamedText();
 
   async function refresh() {
     setLoading(true);
     setError('');
     setPending(null);
+    reply.reset();
     try { setHistory(await getHistory()); }
     catch (err) { setError(err instanceof Error ? err.message : 'Could not load history.'); }
     finally { setLoading(false); }
@@ -41,10 +44,12 @@ export default function ChatScreen() {
     const prompt = message.trim();
     setSending(true);
     setError('');
-    setPending({ prompt, reply: '' });
+    setPending({ prompt });
+    reply.reset();
     try {
-      const exchange = await sendMessage(prompt, text =>
-        setPending(current => current && { ...current, reply: current.reply + text }));
+      const exchange = await sendMessage(prompt, reply.append);
+      // Let the reveal finish before the saved reply replaces it, so the end doesn't jump.
+      await reply.settled();
       setHistory(current => [exchange, ...current]);
       setPending(null);
       setMessage('');
@@ -56,7 +61,7 @@ export default function ChatScreen() {
   }
 
   const items: ListItem[] = pending
-    ? [{ id: 'pending', provider: '', created_at: '', ...pending }, ...history]
+    ? [{ id: 'pending', provider: '', created_at: '', reply: reply.shown, ...pending }, ...history]
     : history;
 
   return (

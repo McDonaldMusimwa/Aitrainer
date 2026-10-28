@@ -62,7 +62,9 @@ export async function sendMessage(message: string, onDelta: (text: string) => vo
   };
   armTimeout();
   try {
-    // React Native's built-in fetch cannot read a response body as a stream.
+    // Expo already installs its streaming fetch as the global, but use it explicitly so
+    // replies still stream if EXPO_PUBLIC_USE_RN_FETCH switches the global back to
+    // React Native's polyfill, which cannot read a response body as a stream.
     const response = await streamingFetch(baseUrl + '/api/v1/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },

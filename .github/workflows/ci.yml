@@ -64,7 +64,7 @@ jobs:
       - run: python -m pytest -q
 
   mobile-typecheck:
-    name: mobile typecheck
+    name: mobile typecheck and tests
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-24.04
@@ -81,6 +81,7 @@ jobs:
           cache-dependency-path: apps/mobile/package-lock.json
       - run: npm ci
       - run: npm run typecheck
+      - run: npm test -- --ci
 
   smoke:
     name: compose smoke test

@@ -146,6 +146,13 @@ cd ../agent
 
 Backend unit tests use SQLite and mocked agent responses. The separate smoke test exercises real PostgreSQL and service communication through Compose.
 
+Mobile unit tests use Jest with the `jest-expo` preset and need no running services:
+
+```powershell
+cd apps/mobile
+npm test            # or: npm run test:watch
+```
+
 ## Initial verification
 
 - 7 backend tests and 3 agent tests passed.
