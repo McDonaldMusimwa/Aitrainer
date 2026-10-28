@@ -6,6 +6,15 @@ import {
 } from 'react-native';
 import { useStyles, useTheme, type AppColors } from '../theme';
 import { Exchange, getHistory, sendMessage } from '../api';
+import { useStreamedText } from '../useStreamedText';
+
+type PendingReply = { prompt: string; failed?: boolean };
+type ListItem = Exchange & { failed?: boolean };
+
+function badge(item: ListItem) {
+  if (item.id !== 'pending') return item.provider === 'demo' ? 'DEMO RESPONSE' : item.provider.toUpperCase();
+  return item.failed ? 'INCOMPLETE — NOT SAVED' : 'WRITING…';
+}
 
 export default function ChatScreen() {
   const { colors } = useTheme();
@@ -15,10 +24,14 @@ export default function ChatScreen() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [pending, setPending] = useState<PendingReply | null>(null);
+  const reply = useStreamedText();
 
   async function refresh() {
     setLoading(true);
     setError('');
+    setPending(null);
+    reply.reset();
     try { setHistory(await getHistory()); }
     catch (err) { setError(err instanceof Error ? err.message : 'Could not load history.'); }
     finally { setLoading(false); }
@@ -28,16 +41,28 @@ export default function ChatScreen() {
 
   async function send() {
     if (!message.trim() || sending || loading) return;
+    const prompt = message.trim();
     setSending(true);
     setError('');
+    setPending({ prompt });
+    reply.reset();
     try {
-      const exchange = await sendMessage(message.trim());
+      const exchange = await sendMessage(prompt, reply.append);
+      // Let the reveal finish before the saved reply replaces it, so the end doesn't jump.
+      await reply.settled();
       setHistory(current => [exchange, ...current]);
+      setPending(null);
       setMessage('');
     } catch (err) {
+      // Keep whatever was already written visible next to the error.
+      setPending(current => current && { ...current, failed: true });
       setError(err instanceof Error ? err.message : 'Could not send your message.');
     } finally { setSending(false); }
   }
+
+  const items: ListItem[] = pending
+    ? [{ id: 'pending', provider: '', created_at: '', reply: reply.shown, ...pending }, ...history]
+    : history;
 
   return (
     <KeyboardAvoidingView style={styles.page} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -57,7 +82,7 @@ export default function ChatScreen() {
           <FlatList
             inverted
             style={styles.list}
-            data={history}
+            data={items}
             keyExtractor={item => item.id}
             contentContainerStyle={styles.messages}
             ListEmptyComponent={<View style={styles.empty}>
@@ -66,8 +91,13 @@ export default function ChatScreen() {
             </View>}
             renderItem={({ item }) => <View style={styles.card}>
               <Text style={styles.prompt}>{item.prompt}</Text>
-              <Text style={styles.reply}>{item.reply}</Text>
-              <Text style={styles.badge}>{item.provider === 'demo' ? 'DEMO RESPONSE' : item.provider.toUpperCase()}</Text>
+              {item.reply ? <Text style={styles.reply}>{item.reply}</Text>
+                : item.failed ? null
+                : <View style={styles.thinking}>
+                  <ActivityIndicator size="small" color={colors.muted} />
+                  <Text style={styles.reply}>Thinking…</Text>
+                </View>}
+              <Text style={styles.badge}>{badge(item)}</Text>
             </View>}
           />}
         <View style={styles.composer}>
@@ -110,6 +140,7 @@ const makeStyles = (colors: AppColors) => StyleSheet.create({
   card: { backgroundColor: colors.surface, padding: 20, borderRadius: 16, gap: 12 },
   prompt: { fontWeight: '600', fontSize: 16, color: colors.ink },
   reply: { fontSize: 15, lineHeight: 23, color: colors.muted },
+  thinking: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   badge: { fontSize: 10, letterSpacing: 1, color: colors.ink, fontWeight: '600' },
   composer: { flexDirection: 'row', alignItems: 'flex-end', gap: 10, paddingTop: 16 },
   input: { flex: 1, backgroundColor: colors.surface, borderRadius: 16, padding: 16, fontSize: 15, minHeight: 54, maxHeight: 140, color: colors.ink },
